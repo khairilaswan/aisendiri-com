@@ -7,11 +7,14 @@ import com.aisendiri.shared.chat.Role
 import com.aisendiri.shared.chat.StopFilter
 import com.aisendiri.shared.device.EngineConfig
 import com.aisendiri.shared.model.AiModel
+import com.aisendiri.shared.model.VisionAddon
 import com.aisendiri.shared.platform.ChatEngine
 import com.aisendiri.shared.platform.FinishReason
 import com.aisendiri.shared.platform.GenerationEvent
 import com.aisendiri.shared.platform.GenerationParams
 import com.aisendiri.shared.platform.GenerationStats
+import com.aisendiri.shared.platform.Photo
+import com.aisendiri.shared.platform.PhotoStore
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -25,14 +28,17 @@ import java.util.concurrent.Executors
 import kotlin.random.Random
 
 /** Runs llama.cpp on the phone. All native calls happen on one dedicated thread. */
-class LlamaChatEngine(private val context: Context) : ChatEngine {
+class LlamaChatEngine(private val context: Context, private val photos: PhotoStore) : ChatEngine {
     private val thread = Executors.newSingleThreadExecutor { r -> Thread(r, "llama").apply { priority = Thread.MAX_PRIORITY } }
         .asCoroutineDispatcher()
 
     private var handle = 0L
     private var contextSize = 0
+    private var threads = 0
     private val _loadedModelId = MutableStateFlow<String?>(null)
     override val loadedModelId: StateFlow<String?> = _loadedModelId
+    private val _visionId = MutableStateFlow<String?>(null)
+    override val visionId: StateFlow<String?> = _visionId
 
     private fun ensureNative() = LlamaNative.ensureInitialized(context.applicationInfo.nativeLibraryDir)
 
@@ -44,16 +50,28 @@ class LlamaChatEngine(private val context: Context) : ChatEngine {
             check(h != 0L) { "Could not load ${model.fileName}" }
             handle = h
             contextSize = config.contextSize
+            threads = config.threads
             _loadedModelId.value = model.id
         }
     }
 
     override suspend fun unload() = withContext(thread) { freeHandle() }
 
+    override suspend fun attachVision(addon: VisionAddon, path: String, maxImageTokens: Int): Result<Unit> =
+        withContext(thread) {
+            runCatching {
+                check(handle != 0L) { "No AI loaded" }
+                if (_visionId.value == addon.id) return@runCatching
+                check(LlamaNative.attachVision(handle, path, threads, maxImageTokens)) { "Could not load ${addon.fileName}" }
+                _visionId.value = addon.id
+            }
+        }
+
     private fun freeHandle() {
         if (handle != 0L) LlamaNative.free(handle)
         handle = 0L
         _loadedModelId.value = null
+        _visionId.value = null
     }
 
     override fun generate(messages: List<ChatMessage>, params: GenerationParams): Flow<GenerationEvent> = flow {
@@ -66,19 +84,41 @@ class LlamaChatEngine(private val context: Context) : ChatEngine {
         var history = messages
         var trimmed = false
         var promptTokens: Int
+        val withPhotos = _visionId.value != null
+        val loaded = mutableMapOf<String, Photo>()
         while (true) {
+            // Without a photo add-on the AI never sees the photo, only the user's words.
+            val shown = if (withPhotos) history.filter { it.photo != null }.mapNotNull { m ->
+                m.photo?.let { id -> loaded.getOrPut(id) { photos.rgb(id) ?: return@mapNotNull null } }
+            } else emptyList()
+            val shownIds = shown.map { it.id }.toSet()
+            val marker = if (shown.isEmpty()) "" else LlamaNative.mediaMarker()
             val prompt = LlamaNative.formatChat(
                 h,
                 history.map { it.role.wire }.toTypedArray(),
-                history.map { it.text.toByteArray(Charsets.UTF_8) }.toTypedArray(),
+                history.map { m ->
+                    val text = if (m.photo in shownIds) "$marker\n${m.text}" else m.text
+                    text.toByteArray(Charsets.UTF_8)
+                }.toTypedArray(),
             )
             if (prompt == null) {
                 emit(GenerationEvent.Failed("Chat template failed"))
                 return@flow
             }
-            promptTokens = LlamaNative.startCompletion(
-                h, prompt, reserve, params.temperature, params.topP, params.minP, params.repeatPenalty, Random.nextInt(),
-            )
+            promptTokens = if (shown.isEmpty()) {
+                LlamaNative.startCompletion(
+                    h, prompt, reserve, params.temperature, params.topP, params.minP, params.repeatPenalty, Random.nextInt(),
+                )
+            } else {
+                LlamaNative.startCompletionWithImages(
+                    h, prompt,
+                    shown.map { it.rgb }.toTypedArray(),
+                    shown.map { it.width }.toIntArray(),
+                    shown.map { it.height }.toIntArray(),
+                    shown.map { it.id }.toTypedArray(),
+                    reserve, params.temperature, params.topP, params.minP, params.repeatPenalty, Random.nextInt(),
+                )
+            }
             if (promptTokens != LlamaNative.ERR_CONTEXT_FULL) break
             // Too long: forget the oldest message after the system prompt, keeping the latest question.
             val dropAt = history.indexOfFirst { it.role != Role.SYSTEM }
@@ -121,6 +161,7 @@ class LlamaChatEngine(private val context: Context) : ChatEngine {
             ensureNative()
             buildString {
                 if (handle != 0L) appendLine("model: ${LlamaNative.modelDescription(handle)} · ctx $contextSize")
+                _visionId.value?.let { appendLine("photos: $it") }
                 append(LlamaNative.systemInfo())
             }
         }.getOrElse { "engine unavailable: ${it.message}" }

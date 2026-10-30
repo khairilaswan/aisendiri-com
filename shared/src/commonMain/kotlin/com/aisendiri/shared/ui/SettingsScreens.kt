@@ -44,9 +44,11 @@ import com.aisendiri.shared.i18n.LocalStrings
 import com.aisendiri.shared.model.AiModel
 import com.aisendiri.shared.model.ModelCatalog
 import com.aisendiri.shared.model.ModelFile
+import com.aisendiri.shared.model.VisionCatalog
 import com.aisendiri.shared.platform.DownloadState
 import com.aisendiri.shared.settings.AppLanguage
 import com.aisendiri.shared.settings.AppSettings
+import com.aisendiri.shared.settings.PhotoDetail
 import com.aisendiri.shared.settings.ThemeMode
 import com.aisendiri.shared.voice.SpeechCatalog
 import com.aisendiri.shared.voice.SpeechLanguage
@@ -238,6 +240,28 @@ fun ModelsScreen(c: AppController) {
             SpeechCatalog.all.filter { settings.advancedMode || c.isInstalled(it) || it == recommendedSpeech }.forEach { m ->
                 SpeechModelCard(c, m, settings.advancedMode) { confirmDelete = m }
             }
+            // Photo add-ons only show once downloaded; they are offered when the user adds a photo.
+            VisionCatalog.all.filter { c.isInstalled(it) }.forEach { addon ->
+                Text(s.homePhotoTitle, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp))
+                SectionCard {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconTile(AppIcons.Camera)
+                        Spacer(Modifier.width(12.dp))
+                        Text(s.photoAddonName, Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+                        Badge(s.installed)
+                    }
+                    Text(
+                        addon.forModelIds.mapNotNull { ModelCatalog.byId(it) }.joinToString(" · ") { s.tierName(it.tier) },
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 10.dp),
+                    )
+                    if (settings.advancedMode) {
+                        Mono(addon.files.joinToString("\n") { "${it.fileName}\n${it.hfRepo}" } + "\n${addon.license}")
+                    }
+                    Text(s.downloadSize(formatBytes(addon.totalSizeBytes)), style = MaterialTheme.typography.bodyMedium)
+                    TextButton(onClick = { confirmDelete = addon }) { Text(s.delete) }
+                }
+            }
         }
     }
     confirmDelete?.let { m ->
@@ -344,6 +368,14 @@ fun AdvancedScreen(c: AppController) {
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     minLines = 3,
                 )
+            }
+            SectionCard {
+                Text(s.advPhotoDetail, style = MaterialTheme.typography.titleMedium)
+                Text(s.advPhotoDetailHelp, style = MaterialTheme.typography.bodySmall)
+                ChoiceRow(PhotoDetail.entries.map { it to s.photoDetailLabel(it) }, settings.photoDetail) { v ->
+                    c.updateSettings { it.copy(photoDetail = v) }
+                    c.reloadEngine()
+                }
             }
             SectionCard {
                 Text(s.voiceSection, style = MaterialTheme.typography.titleMedium)

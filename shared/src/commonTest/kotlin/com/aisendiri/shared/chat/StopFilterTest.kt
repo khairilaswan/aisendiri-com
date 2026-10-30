@@ -40,4 +40,9 @@ class StopFilterTest {
         assertFalse(f.stopped)
         assertEquals("<", f.flush())
     }
+
+    @Test
+    fun stopsAtGemma4TurnMarker() {
+        assertEquals("Ini durian." to true, run("Ini durian.", "<turn|>\n<|turn>user"))
+    }
 }

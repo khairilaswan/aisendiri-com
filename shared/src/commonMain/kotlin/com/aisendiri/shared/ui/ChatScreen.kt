@@ -25,7 +25,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.Image
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -36,12 +39,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
@@ -64,6 +70,8 @@ fun ChatScreen(c: AppController) {
     val streaming = c.streamingText
     val loading = c.engineStatus is EngineStatus.Loading
     val tierName = c.activeModel()?.let { s.tierName(it.tier) }
+    val pendingPhoto = c.pendingPhoto
+    var photoMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(c.messages.size, streaming?.length) {
         val count = c.messages.size + (if (streaming != null) 1 else 0) + 1
@@ -78,48 +86,82 @@ fun ChatScreen(c: AppController) {
             SquareIconButton(AppIcons.Add, s.newChat, { c.newChat() }, Modifier.padding(end = 12.dp), color = Malaysia.Yellow, enabled = !c.isGenerating)
         },
         bottomBar = {
-            Row(
+            Column(
                 Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.background)
                     .navigationBarsPadding().imePadding().padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                TextField(
-                    value = input,
-                    onValueChange = { input = it },
-                    placeholder = { Text(s.chatPlaceholder) },
-                    modifier = Modifier.weight(1f).heightIn(min = 52.dp)
-                        .brutal(MaterialTheme.shapes.medium, MaterialTheme.colorScheme.surface, ink, shadow = 0.dp),
-                    maxLines = 6,
-                    shape = MaterialTheme.shapes.medium,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                    ),
-                )
-                val canSend = input.text.isNotBlank() && !loading
-                val generating = c.isGenerating
-                PressableBlock(
-                    onClick = {
-                        if (generating) {
-                            c.stopGeneration()
-                        } else {
-                            c.send(input.text)
-                            input = TextFieldValue("")
-                        }
-                    },
-                    color = if (generating) Malaysia.Red else Malaysia.Yellow,
-                    modifier = Modifier.padding(end = ShadowOffset, bottom = ShadowOffset).size(52.dp),
-                    enabled = generating || canSend,
+                if (pendingPhoto != null) {
+                    PendingPhoto(pendingPhoto, c::photoThumbnail, onRemove = { c.discardPendingPhoto() })
+                }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                        if (generating) AppIcons.Stop else AppIcons.Send,
-                        contentDescription = if (generating) s.stop else s.send,
-                        tint = if (generating) Color.White else Malaysia.Ink,
+                    Box {
+                        PressableBlock(
+                            onClick = { if (c.photosReady()) photoMenu = true else c.attachPhoto(fromCamera = false) },
+                            color = MaterialTheme.colorScheme.surface,
+                            modifier = Modifier.padding(end = ShadowOffset, bottom = ShadowOffset).size(52.dp),
+                            enabled = !c.isGenerating && !c.pickingPhoto,
+                        ) {
+                            if (c.pickingPhoto) {
+                                CircularProgressIndicator(Modifier.size(22.dp), strokeWidth = 2.dp)
+                            } else {
+                                Icon(AppIcons.Camera, contentDescription = s.attachPhoto, tint = MaterialTheme.colorScheme.onSurface)
+                            }
+                        }
+                        DropdownMenu(expanded = photoMenu, onDismissRequest = { photoMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(s.photoFromCamera) },
+                                leadingIcon = { Icon(AppIcons.Camera, null) },
+                                onClick = { photoMenu = false; c.attachPhoto(fromCamera = true) },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(s.photoFromGallery) },
+                                leadingIcon = { Icon(AppIcons.Image, null) },
+                                onClick = { photoMenu = false; c.attachPhoto(fromCamera = false) },
+                            )
+                        }
+                    }
+                    TextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        placeholder = { Text(if (pendingPhoto != null) s.photoPlaceholder else s.chatPlaceholder) },
+                        modifier = Modifier.weight(1f).heightIn(min = 52.dp)
+                            .brutal(MaterialTheme.shapes.medium, MaterialTheme.colorScheme.surface, ink, shadow = 0.dp),
+                        maxLines = 6,
+                        shape = MaterialTheme.shapes.medium,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surface,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                        ),
                     )
+                    val canSend = (input.text.isNotBlank() || pendingPhoto != null) && !loading
+                    val generating = c.isGenerating
+                    PressableBlock(
+                        onClick = {
+                            if (generating) {
+                                c.stopGeneration()
+                            } else {
+                                c.send(input.text)
+                                input = TextFieldValue("")
+                            }
+                        },
+                        color = if (generating) Malaysia.Red else Malaysia.Yellow,
+                        modifier = Modifier.padding(end = ShadowOffset, bottom = ShadowOffset).size(52.dp),
+                        enabled = generating || canSend,
+                    ) {
+                        Icon(
+                            if (generating) AppIcons.Stop else AppIcons.Send,
+                            contentDescription = if (generating) s.stop else s.send,
+                            tint = if (generating) Color.White else Malaysia.Ink,
+                        )
+                    }
                 }
             }
         },
@@ -169,11 +211,13 @@ fun ChatScreen(c: AppController) {
                     msg,
                     onCopy = { clipboard.setText(AnnotatedString(msg.text)) },
                     onReport = { c.reportMessage(index) },
+                    loadPhoto = c::photoThumbnail,
                 )
             }
             if (streaming != null) {
                 item {
-                    MessageBubble(ChatMessage(Role.ASSISTANT, streaming.ifEmpty { s.thinking }), onCopy = null, onReport = null)
+                    val waiting = if (c.messages.lastOrNull()?.photo != null && c.photosReady()) s.photoLooking else s.thinking
+                    MessageBubble(ChatMessage(Role.ASSISTANT, streaming.ifEmpty { waiting }), onCopy = null, onReport = null)
                 }
             }
             item {
@@ -205,7 +249,12 @@ private fun SuggestionCard(icon: ImageVector, label: String, modifier: Modifier,
 }
 
 @Composable
-internal fun MessageBubble(msg: ChatMessage, onCopy: (() -> Unit)?, onReport: (() -> Unit)?) {
+internal fun MessageBubble(
+    msg: ChatMessage,
+    onCopy: (() -> Unit)?,
+    onReport: (() -> Unit)?,
+    loadPhoto: (suspend (String) -> ImageBitmap?)? = null,
+) {
     val s = LocalStrings.current
     val mine = msg.role == Role.USER
     if (mine) {
@@ -214,8 +263,13 @@ internal fun MessageBubble(msg: ChatMessage, onCopy: (() -> Unit)?, onReport: ((
                 Modifier.padding(end = ShadowOffset, bottom = ShadowOffset).widthIn(max = 320.dp)
                     .brutal(RoundedCornerShape(16.dp, 16.dp, 2.dp, 16.dp), Malaysia.Navy, ink),
             ) {
-                SelectionContainer {
-                    Text(msg.text, Modifier.padding(horizontal = 16.dp, vertical = 11.dp), style = MaterialTheme.typography.bodyLarge, color = Color.White)
+                Column {
+                    if (msg.photo != null && loadPhoto != null) {
+                        PhotoImage(msg.photo, loadPhoto, Modifier.padding(6.dp).widthIn(max = 240.dp).heightIn(max = 240.dp))
+                    }
+                    SelectionContainer {
+                        Text(msg.text, Modifier.padding(horizontal = 16.dp, vertical = 11.dp), style = MaterialTheme.typography.bodyLarge, color = Color.White)
+                    }
                 }
             }
         }
@@ -259,5 +313,38 @@ private fun SmallAction(icon: ImageVector, label: String, onClick: () -> Unit) {
         Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
         Spacer(Modifier.width(6.dp))
         Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+/** A saved chat photo, loaded off the main thread. */
+@Composable
+private fun PhotoImage(id: String, load: suspend (String) -> ImageBitmap?, modifier: Modifier, crop: Boolean = false) {
+    val bitmap by produceState<ImageBitmap?>(null, id) { value = load(id) }
+    val b = bitmap
+    if (b == null) {
+        Box(modifier.size(120.dp).clip(RoundedCornerShape(12.dp)).background(Malaysia.SkyTint))
+    } else {
+        Image(
+            b,
+            contentDescription = null,
+            modifier = modifier.clip(RoundedCornerShape(12.dp)),
+            contentScale = if (crop) ContentScale.Crop else ContentScale.Fit,
+        )
+    }
+}
+
+/** The photo waiting to be sent, with a button to remove it. */
+@Composable
+private fun PendingPhoto(id: String, load: suspend (String) -> ImageBitmap?, onRemove: () -> Unit) {
+    val s = LocalStrings.current
+    Box {
+        PhotoImage(id, load, Modifier.size(84.dp).brutal(RoundedCornerShape(12.dp), MaterialTheme.colorScheme.surface, ink, shadow = 0.dp), crop = true)
+        Box(
+            Modifier.align(Alignment.TopEnd).padding(4.dp).size(28.dp).clip(CircleShape).background(Malaysia.Ink)
+                .clickable(onClick = onRemove),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(AppIcons.Close, contentDescription = s.removePhoto, tint = Color.White, modifier = Modifier.size(18.dp))
+        }
     }
 }

@@ -36,6 +36,6 @@ class StopFilter(private val stops: List<String> = DEFAULT_STOPS) {
     }
 
     companion object {
-        val DEFAULT_STOPS = listOf("<|im_end|>", "<|im_start|>", "<end_of_turn>", "<start_of_turn>", "<|eot_id|>")
+        val DEFAULT_STOPS = listOf("<|im_end|>", "<|im_start|>", "<end_of_turn>", "<start_of_turn>", "<|eot_id|>", "<turn|>", "<|turn>")
     }
 }

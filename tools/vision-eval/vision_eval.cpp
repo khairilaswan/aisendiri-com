@@ -51,21 +51,20 @@ std::string token_to_piece(const llama_vocab *vocab, llama_token token) {
 }
 
 // Gemma 4 has no built-in template in llama.cpp, so it is written out here (same as the app).
-std::string format_gemma4(const std::vector<std::pair<std::string, std::string>> &msgs, bool empty_thought) {
+std::string format_gemma4(const std::vector<std::pair<std::string, std::string>> &msgs) {
     std::string out;
     for (auto &m : msgs) {
         const std::string role = m.first == "assistant" ? "model" : m.first;
         out += "<|turn>" + role + "\n" + m.second + "<turn|>\n";
     }
-    out += "<|turn>model\n";
-    if (empty_thought) out += "<|channel>thought\n<channel|>";
+    out += "<|turn>model\n<|channel>thought\n<channel|>"; // thinking off
     return out;
 }
 
 std::string format_chat(const llama_model *model, const std::vector<std::pair<std::string, std::string>> &msgs) {
     const char *tmpl = llama_model_chat_template(model, nullptr);
     if (tmpl && std::string(tmpl).find("<|turn>") != std::string::npos) {
-        return format_gemma4(msgs, std::string(tmpl).find("<|channel>thought") != std::string::npos);
+        return format_gemma4(msgs);
     }
     std::vector<llama_chat_message> chat;
     size_t total = 0;

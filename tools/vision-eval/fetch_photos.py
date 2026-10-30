@@ -1,6 +1,7 @@
 """Downloads the photo test images from Wikimedia Commons (freely licensed) into images/,
 and records each file's title, author and licence in results/photos.json."""
 import json
+import time
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -15,8 +16,14 @@ UA = {"User-Agent": "AiSendiriVisionEval/1.0 (https://github.com/khairilaswan/ai
 
 
 def get(url):
-    with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
-        return r.read()
+    for attempt in range(5):  # Wikimedia sometimes rate-limits parallel jobs
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=60) as r:
+                return r.read()
+        except Exception as e:
+            print(f"retry {url}: {e}")
+            time.sleep(5 * (attempt + 1))
+    raise RuntimeError(f"could not download {url}")
 
 
 credits = {}

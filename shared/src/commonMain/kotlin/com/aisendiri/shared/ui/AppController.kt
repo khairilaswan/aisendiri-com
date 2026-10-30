@@ -18,6 +18,8 @@ import com.aisendiri.shared.i18n.Strings
 import com.aisendiri.shared.model.AiModel
 import com.aisendiri.shared.model.ModelCatalog
 import com.aisendiri.shared.model.ModelFile
+import com.aisendiri.shared.model.VisionAddon
+import com.aisendiri.shared.model.VisionCatalog
 import com.aisendiri.shared.platform.AppServices
 import com.aisendiri.shared.platform.DownloadState
 import com.aisendiri.shared.platform.FinishReason
@@ -53,6 +55,7 @@ sealed interface Screen {
     data object Home : Screen
     data class Chat(val conversationId: String?) : Screen
     data object Talk : Screen
+    data object PhotoSetup : Screen
     data object History : Screen
     data object Settings : Screen
     data object Models : Screen
@@ -176,6 +179,7 @@ class AppController(
                     downloads[model.id] = DownloadUi(state, paused = false)
                     if (state is DownloadState.Done) {
                         modelFilesVersion++
+                        if (current == Screen.PhotoSetup && photosReady()) back()
                         if (thenTest && model is AiModel && current == Screen.Download(model)) {
                             stack = stack.dropLast(1) + Screen.FirstRun(model)
                             runFirstTest(model)
@@ -209,6 +213,10 @@ class AppController(
                 engineStatus = EngineStatus.NotLoaded
             }
             if (model is SpeechModel) sttMutex.withLock { services.voice.stt.unload() }
+            if (model is VisionAddon) {
+                if (services.engine.visionId.value == model.id) reloadEngine()
+                model.photoModel?.let { deleteModel(it) }
+            }
             services.models.delete(model)
             if (settings.value.activeModelId == model.id) {
                 services.settings.update { it.copy(activeModelId = null) }
@@ -341,6 +349,7 @@ class AppController(
 
     private fun openConversation(conversationId: String?, screen: Screen) {
         stopGeneration()
+        discardPendingPhoto()
         messages.clear()
         chatNotice = null
         conversation = null
@@ -352,12 +361,13 @@ class AppController(
                     messages.addAll(it.messages)
                 }
             }
-            ensureEngine()
+            ensureEngine(chatModel())
         }
     }
 
     fun newChat() {
         stopGeneration()
+        discardPendingPhoto()
         messages.clear()
         chatNotice = null
         conversation = null
@@ -365,9 +375,11 @@ class AppController(
 
     /** Sends a message. In a voice chat ([voice]), the AI answers briefly and the reply is read aloud. */
     fun send(text: String, voice: Boolean = false) {
-        val trimmed = text.trim()
+        val photo = if (voice) null else pendingPhoto
+        val trimmed = text.trim().ifEmpty { if (photo != null) strings().photoDefaultQuestion else "" }
         if (trimmed.isEmpty() || isGenerating) return
-        messages.add(ChatMessage(Role.USER, trimmed))
+        messages.add(ChatMessage(Role.USER, trimmed, photo = photo))
+        pendingPhoto = null
         chatNotice = null
         streamingText = ""
         isGenerating = true
@@ -375,11 +387,12 @@ class AppController(
         generationJob = scope.launch {
             var reply = ""
             try {
-                if (!ensureEngine()) {
+                if (!ensureEngine(chatModel())) {
                     chatNotice = strings().aiError
                     return@launch
                 }
                 val s = strings()
+                if (messages.any { it.photo != null } && !ensureVision()) chatNotice = s.photoNotSeen
                 var system = settings.value.customSystemPrompt?.takeIf { it.isNotBlank() } ?: s.defaultSystemPrompt
                 if (voice) system += "\n\n" + s.voiceStylePrompt
                 val history = listOf(ChatMessage(Role.SYSTEM, system)) + messages.toList()
@@ -658,6 +671,83 @@ class AppController(
         }
     }
 
+    // ---- Photos ----
+
+    /** A photo picked for the next message, shown above the text box until it's sent. */
+    var pendingPhoto by mutableStateOf<String?>(null)
+        private set
+    /** The phone's photo picker or camera is open, or the photo is being saved. */
+    var pickingPhoto by mutableStateOf(false)
+        private set
+
+    /** The photo add-on for the AI in use, or null when photos aren't available with that AI. */
+    fun visionAddon(): VisionAddon? = VisionCatalog.forModel(activeModel())
+
+    /** True when photos work right now: the add-on (and its photo AI, if any) is downloaded. */
+    fun photosReady(): Boolean = visionAddon()?.files?.all { isInstalled(it) } == true
+
+    /**
+     * The AI for the open chat: the chosen AI, or the add-on's photo AI once the chat has a
+     * photo and the chosen AI can't see photos itself.
+     */
+    fun chatModel(): AiModel? {
+        val active = activeModel() ?: return null
+        val hasPhoto = pendingPhoto != null || messages.any { it.photo != null }
+        return if (hasPhoto && photosReady()) visionAddon()?.readerFor(active) ?: active else active
+    }
+
+    /** Opens a chat ready for a photo: from the Home screen's "Understand Photo". */
+    fun openPhotoChat() {
+        openChat(null)
+        if (!photosReady()) navigate(Screen.PhotoSetup)
+    }
+
+    fun attachPhoto(fromCamera: Boolean) {
+        if (!photosReady()) {
+            navigate(Screen.PhotoSetup)
+            return
+        }
+        if (pickingPhoto) return
+        pickingPhoto = true
+        scope.launch {
+            try {
+                val id = if (fromCamera) services.photos.takePhoto() else services.photos.pick()
+                if (id != null) {
+                    discardPendingPhoto()
+                    pendingPhoto = id
+                    ensureVision() // starts loading the image encoder while the user types
+                }
+            } finally {
+                pickingPhoto = false
+            }
+        }
+    }
+
+    fun discardPendingPhoto() {
+        val id = pendingPhoto ?: return
+        pendingPhoto = null
+        scope.launch { services.photos.delete(listOf(id)) }
+    }
+
+    suspend fun photoThumbnail(id: String) = services.photos.thumbnail(id)
+
+    /** Downloads the photo add-on (and its photo AI), then returns to the chat. */
+    fun downloadPhotoAddon() {
+        val addon = visionAddon() ?: return
+        addon.files.filterNot { isInstalled(it) }.forEach { startDownload(it, thenTest = false) }
+    }
+
+    /** Loads the AI that reads photos in this chat with its image encoder. False if photos can't be read. */
+    private suspend fun ensureVision(): Boolean {
+        val reader = chatModel() ?: return false
+        val addon = VisionCatalog.encoderFor(reader)?.takeIf { isInstalled(it) } ?: return false
+        if (!ensureEngine(reader)) return false
+        return engineMutex.withLock {
+            services.engine.visionId.value == addon.id ||
+                services.engine.attachVision(addon, services.models.filePath(addon), settings.value.photoDetail.maxImageTokens).isSuccess
+        }
+    }
+
     // ---- History ----
 
     var conversations by mutableStateOf<List<Conversation>>(emptyList())
@@ -669,6 +759,7 @@ class AppController(
 
     fun deleteConversation(id: String) {
         scope.launch {
+            services.conversations.get(id)?.let { conv -> services.photos.delete(conv.messages.mapNotNull { it.photo }) }
             services.conversations.delete(id)
             loadHistory()
         }
@@ -677,6 +768,7 @@ class AppController(
     fun deleteAllConversations() {
         scope.launch {
             services.conversations.deleteAll()
+            services.photos.deleteAll()
             loadHistory()
         }
     }

@@ -74,7 +74,7 @@ jobs:
               print(f"== {q}")
               for m in api.list_models(search=q, sort="downloads", limit=20):
                   print(f"  {m.id}  downloads={m.downloads}")
-          for repo in ["aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF", "aisingapore/Gemma-SEA-LION-v4-4B-VL-GGUF", "ggml-org/gemma-4-E2B-it-GGUF"]:
+          for repo in ["aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF", "ggml-org/gemma-4-E2B-it-GGUF", "unsloth/Qwen3-VL-2B-Instruct-GGUF", "Qwen/Qwen3-VL-2B-Instruct-GGUF", "ggml-org/Qwen3-VL-2B-Instruct-GGUF"]:
               try:
                   print(repo, [(f.rfilename, f.size) for f in api.model_info(repo, files_metadata=True).siblings])
               except Exception as e:

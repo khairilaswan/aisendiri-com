@@ -90,7 +90,9 @@ fun HomeScreen(c: AppController) {
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                FeatureTile(AppIcons.Camera, s.homePhotoTitle, s.homePhotoBody, s.comingSoon, Malaysia.RedTint, enabled = false, Modifier.weight(1f)) {}
+                FeatureTile(AppIcons.Camera, s.homePhotoTitle, s.homePhotoBody, null, Malaysia.RedTint, enabled = active != null, Modifier.weight(1f)) {
+                    c.openPhotoChat()
+                }
                 FeatureTile(AppIcons.Image, s.homeImageTitle, s.homeImageBody, s.comingSoon, Malaysia.YellowTint, enabled = false, Modifier.weight(1f)) {}
             }
             SectionCard {

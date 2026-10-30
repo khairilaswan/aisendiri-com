@@ -18,7 +18,9 @@ Status of the store rules that matter for an on-device AI app. ✅ done in this 
 
 - ✅ Target SDK 35, 64-bit (arm64-v8a) native code.
 - ✅ Permissions: INTERNET, ACCESS_NETWORK_STATE, and RECORD_AUDIO (asked only when the user first taps the mic in Talk).
+- ✅ Photos use the system photo picker and the phone's camera app, so the app declares no READ_MEDIA_IMAGES, storage or CAMERA permission (Play's photo and video permissions policy). The camera app saves into a private FileProvider path.
 - ⏳ Data safety: declare microphone audio as "processed on device, not collected" (it never leaves the phone and is never saved).
+- ⏳ Data safety: photos the user attaches are "processed on device, not collected". They are saved with the chat in app-private storage and deleted with it.
 - ⏳ Data safety form: "no data collected", "no data shared" (true for this build).
 - ⏳ Generative AI declaration in Play Console, plus a content-filtering note.
 - ⏳ Release signing key via Play App Signing (the committed `debug.keystore` is for test builds only).
@@ -29,5 +31,6 @@ Status of the store rules that matter for an on-device AI app. ✅ done in this 
 - ⏳ iOS app shell around `shared/` (`MainViewController`), llama.cpp XCFramework with Metal.
 - ⏳ Downloads use `URLSession` background sessions; model files excluded from iCloud backup (`isExcludedFromBackup`).
 - ⏳ Increased Memory Limit entitlement for bigger models.
+- ⏳ `NSCameraUsageDescription` for taking a photo; use `PHPickerViewController` for the gallery (needs no photo library permission).
 - ⏳ `NSMicrophoneUsageDescription` string. Whisper runs on the device, so no speech-recognition permission is needed.
 - ⏳ Privacy manifest (`PrivacyInfo.xcprivacy`) declaring required-reason APIs (disk space, system boot time).

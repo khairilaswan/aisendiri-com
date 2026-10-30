@@ -18,7 +18,7 @@ set(LLAMA_SRC ${CMAKE_CURRENT_LIST_DIR}/../../../../third_party/llama.cpp)
 add_subdirectory(${LLAMA_SRC} build-llama)
 
 add_library(aisendiri_llama SHARED aisendiri_llama.cpp)
-target_link_libraries(aisendiri_llama llama ggml android log)
+target_link_libraries(aisendiri_llama mtmd llama ggml android log)
 
 # Speech recognition: whisper.cpp's source compiled against the same ggml as llama.cpp,
 # so both share one set of CPU backends and the app ships ggml only once.

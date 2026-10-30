@@ -34,6 +34,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(project(":llama"))
+            implementation(libs.androidx.core)
             implementation(libs.kotlinx.coroutines.android)
         }
         commonTest.dependencies {

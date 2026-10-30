@@ -10,3 +10,6 @@ captures/
 *.apk
 *.aab
 *.gguf
+*.jks
+*.keystore
+!androidApp/debug.keystore

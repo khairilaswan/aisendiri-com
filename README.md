@@ -34,6 +34,10 @@ iOS targets are declared in `shared/` so the code stays ready for an iOS app; th
 Every push to `main` builds a debug APK on GitHub Actions and publishes it as a pre-release.
 See **[docs/INSTALL-ANDROID.md](docs/INSTALL-ANDROID.md)**.
 
+## Play Store releases
+
+Signed app bundles come from the **Play Store release build** workflow. Setup, signing and Play Console steps: **[docs/RELEASE-ANDROID.md](docs/RELEASE-ANDROID.md)**. Listing text, Data safety answers and the privacy policy are in `docs/play-store/` and `site/privacy/`.
+
 ## Building locally
 
 ```bash

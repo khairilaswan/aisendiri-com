@@ -146,6 +146,11 @@ class Strings(
     val myAiBody: String,
     val privacy: String,
     val privacyBody: String,
+    val privacyPolicyLink: String,
+    val licenses: String,
+    val licensesBody: String,
+    val licensesAiHeading: String,
+    val licensesSoftwareHeading: String,
     val about: String,
     val version: (String) -> String,
     val advancedMode: String,
@@ -386,7 +391,14 @@ val EnglishStrings = Strings(
         "The app uses the internet only to download AI files, and it never sends your messages anywhere. " +
         "We check your phone's hardware (memory, storage, processor) to choose a suitable AI. " +
         "We never read your photos, messages or contacts for this. " +
-        "When you talk to the AI, your voice is turned into text on your phone and is never saved or sent anywhere.",
+        "When you talk to the AI, your voice is turned into text on your phone and is never saved or sent anywhere. " +
+        "Photos you add are read on your phone and kept with the chat until you delete it. " +
+        "AI files come from Hugging Face, which sees your IP address while a file downloads, like any website.",
+    privacyPolicyLink = "Read the full privacy policy",
+    licenses = "Licences",
+    licensesBody = "AI models and open-source software in this app",
+    licensesAiHeading = "AI models",
+    licensesSoftwareHeading = "Software",
     about = "About",
     version = { "Version $it" },
     advancedMode = "Advanced mode",
@@ -652,7 +664,14 @@ val MalayStrings = Strings(
         "Aplikasi ini menggunakan internet hanya untuk memuat turun fail AI, dan tidak pernah menghantar mesej anda ke mana-mana. " +
         "Untuk memilih AI yang sesuai, kami hanya menyemak perkakasan telefon (RAM, storan, pemproses), " +
         "bukan gambar, mesej atau kenalan anda. " +
-        "Apabila anda bercakap dengan AI, suara anda ditukar kepada teks dalam telefon dan tidak pernah disimpan atau dihantar ke mana-mana.",
+        "Apabila anda bercakap dengan AI, suara anda ditukar kepada teks dalam telefon dan tidak pernah disimpan atau dihantar ke mana-mana. " +
+        "Gambar yang anda tambah dibaca dalam telefon dan disimpan bersama sembang sehingga anda memadamnya. " +
+        "Fail AI dimuat turun dari Hugging Face, yang nampak alamat IP anda semasa muat turun, sama seperti laman web lain.",
+    privacyPolicyLink = "Baca dasar privasi penuh",
+    licenses = "Lesen",
+    licensesBody = "Model AI dan perisian sumber terbuka dalam aplikasi ini",
+    licensesAiHeading = "Model AI",
+    licensesSoftwareHeading = "Perisian",
     about = "Tentang",
     version = { "Versi $it" },
     advancedMode = "Mod lanjutan",

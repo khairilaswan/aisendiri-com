@@ -1,0 +1,92 @@
+name: Play Store release build
+
+# Builds the release app bundle (.aab) for Google Play, plus a release APK to test on a phone.
+# Signing needs the upload key secrets described in docs/RELEASE-ANDROID.md. Without them
+# (or on pull requests) it still builds, unsigned, to check that the release build works.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: Version shown to users, e.g. 1.0.0
+        required: true
+        default: 1.0.0
+  push:
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      NDK_VERSION: 29.0.13113456
+      AISENDIRI_VERSION_CODE: ${{ github.run_number }}
+      AISENDIRI_VERSION_NAME: ${{ inputs.version_name || (startsWith(github.ref, 'refs/tags/v') && github.ref_name) || '0.1.0' }}
+      HAS_KEY: ${{ secrets.UPLOAD_KEYSTORE_BASE64 != '' && github.event_name != 'pull_request' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install NDK and CMake
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;$NDK_VERSION" "cmake;3.31.6" > /dev/null
+
+      - name: Unpack upload key
+        if: env.HAS_KEY == 'true'
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          echo "AISENDIRI_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build release bundle and APK
+        env:
+          AISENDIRI_UPLOAD_STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
+          AISENDIRI_UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          AISENDIRI_UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: ./gradlew :androidApp:bundleRelease :androidApp:assembleRelease --stacktrace
+
+      # Google Play rejects apps whose native libraries don't support 16 KB memory pages.
+      - name: Check 16 KB page alignment
+        run: |
+          readelf="$ANDROID_HOME/ndk/$NDK_VERSION/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          apk=$(ls androidApp/build/outputs/apk/release/*.apk | head -1)
+          mkdir -p so && unzip -q -o "$apk" 'lib/*' -d so
+          bad=0
+          for f in so/lib/arm64-v8a/*.so; do
+            align=$("$readelf" -lW "$f" | awk '$1 == "LOAD" { print $NF }' | sort -u)
+            for a in $align; do
+              if [ $((a)) -lt 16384 ]; then echo "::error::$(basename "$f") LOAD alignment $a"; bad=1; fi
+            done
+            echo "$(basename "$f"): $align"
+          done
+          exit $bad
+
+      - name: Collect files
+        run: |
+          mkdir -p dist
+          suffix=$([ "$HAS_KEY" = true ] && echo signed || echo unsigned)
+          cp androidApp/build/outputs/bundle/release/*.aab "dist/AiSendiri-$AISENDIRI_VERSION_NAME-$AISENDIRI_VERSION_CODE-$suffix.aab"
+          cp androidApp/build/outputs/apk/release/*.apk "dist/AiSendiri-$AISENDIRI_VERSION_NAME-$AISENDIRI_VERSION_CODE-$suffix.apk"
+          ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AiSendiri-release-${{ env.AISENDIRI_VERSION_NAME }}-${{ github.run_number }}
+          path: dist/*
+          retention-days: 30

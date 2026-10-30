@@ -42,6 +42,9 @@ import com.aisendiri.shared.device.Compatibility
 import com.aisendiri.shared.device.Recommender
 import com.aisendiri.shared.i18n.LocalStrings
 import com.aisendiri.shared.model.AiModel
+import com.aisendiri.shared.model.AppLinks
+import com.aisendiri.shared.model.LicenseEntry
+import com.aisendiri.shared.model.Licenses
 import com.aisendiri.shared.model.ModelCatalog
 import com.aisendiri.shared.model.ModelFile
 import com.aisendiri.shared.model.VisionCatalog
@@ -142,6 +145,7 @@ fun SettingsScreen(c: AppController) {
             SectionCard {
                 ListRow(AppIcons.Chip, s.myAi, s.myAiBody, onClick = { c.navigate(Screen.Models) })
                 ListRow(AppIcons.Lock, s.privacy, onClick = { showPrivacy = true })
+                ListRow(AppIcons.Info, s.licenses, s.licensesBody, onClick = { c.navigate(Screen.Licenses) })
             }
             SectionCard {
                 ListRow(
@@ -167,7 +171,12 @@ fun SettingsScreen(c: AppController) {
         AlertDialog(
             onDismissRequest = { showPrivacy = false },
             title = { Text(s.privacy) },
-            text = { Text(s.privacyBody) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(s.privacyBody)
+                    TextButton(onClick = { c.services.platform.openUrl(AppLinks.PRIVACY_POLICY) }) { Text(s.privacyPolicyLink) }
+                }
+            },
             confirmButton = { TextButton(onClick = { showPrivacy = false }) { Text("OK") } },
         )
     }
@@ -436,6 +445,33 @@ fun AdvancedScreen(c: AppController) {
 }
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun LicensesScreen(c: AppController) {
+    val s = LocalStrings.current
+    AppScaffold(title = s.licenses, onBack = { c.back() }) { padding ->
+        Column(
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(s.licensesAiHeading, style = MaterialTheme.typography.titleLarge)
+            Licenses.aiModels.forEach { LicenseCard(c, it) }
+            Text(s.licensesSoftwareHeading, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp))
+            Licenses.software.forEach { LicenseCard(c, it) }
+        }
+    }
+}
+
+@Composable
+private fun LicenseCard(c: AppController, entry: LicenseEntry) {
+    SectionCard(Modifier.clickable { c.services.platform.openUrl(entry.url) }) {
+        Text(entry.name, style = MaterialTheme.typography.titleMedium)
+        Text(entry.license, style = MaterialTheme.typography.bodyMedium)
+        entry.notice?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp))
+        }
+    }
+}
+
 @Composable
 private fun <T> ChoiceRow(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

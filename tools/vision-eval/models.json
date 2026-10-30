@@ -1,0 +1,113 @@
+{
+ "gemma4-e2b": {
+  "repos": [
+   "ggml-org/gemma-4-E2B-it-GGUF",
+   "unsloth/gemma-4-E2B-it-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf",
+   "*Q8_0.gguf"
+  ]
+ },
+ "gemma3n-e2b": {
+  "repos": [
+   "ggml-org/gemma-3n-E2B-it-GGUF",
+   "unsloth/gemma-3n-E2B-it-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf",
+   "*Q8_0.gguf"
+  ]
+ },
+ "sealion-v4.5-e2b": {
+  "repos": [
+   "aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf"
+  ],
+  "mmproj_repos": [
+   "aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF",
+   "ggml-org/gemma-3n-E2B-it-GGUF",
+   "unsloth/gemma-3n-E2B-it-GGUF"
+  ],
+  "note": "Text AI is the app's Smart AI. Uses Gemma 3n's own image encoder if AI Singapore ships none."
+ },
+ "sealion-v4-4b-vl": {
+  "repos": [
+   "aisingapore/Gemma-SEA-LION-v4-4B-VL-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf"
+  ]
+ },
+ "gemma3-4b": {
+  "repos": [
+   "ggml-org/gemma-3-4b-it-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf"
+  ]
+ },
+ "qwen3-vl-2b": {
+  "repos": [
+   "ggml-org/Qwen3-VL-2B-Instruct-GGUF",
+   "unsloth/Qwen3-VL-2B-Instruct-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf",
+   "*Q8_0.gguf"
+  ],
+  "max_image_tokens": 256
+ },
+ "internvl3-1b": {
+  "repos": [
+   "ggml-org/InternVL3-1B-Instruct-GGUF"
+  ],
+  "file": [
+   "*Q8_0.gguf"
+  ]
+ },
+ "lfm2-vl-1.6b": {
+  "repos": [
+   "ggml-org/LFM2-VL-1.6B-GGUF",
+   "LiquidAI/LFM2-VL-1.6B-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf",
+   "*Q8_0.gguf"
+  ],
+  "max_image_tokens": 256
+ },
+ "lfm2-vl-450m": {
+  "repos": [
+   "ggml-org/LFM2-VL-450M-GGUF",
+   "LiquidAI/LFM2-VL-450M-GGUF"
+  ],
+  "file": [
+   "*Q8_0.gguf"
+  ],
+  "max_image_tokens": 256
+ },
+ "lfm2-vl-450m+sailor2": {
+  "same_as": "lfm2-vl-450m",
+  "describe": true
+ },
+ "lfm2-vl-1.6b+sailor2": {
+  "same_as": "lfm2-vl-1.6b",
+  "describe": true
+ },
+ "smolvlm2-500m+sailor2": {
+  "repos": [
+   "ggml-org/SmolVLM2-500M-Video-Instruct-GGUF"
+  ],
+  "file": [
+   "*Q8_0.gguf"
+  ],
+  "describe": true
+ },
+ "qwen3-vl-2b+sailor2": {
+  "same_as": "qwen3-vl-2b",
+  "describe": true
+ }
+}

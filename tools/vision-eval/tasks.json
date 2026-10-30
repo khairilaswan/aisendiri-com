@@ -1,0 +1,17 @@
+{
+  "system": "Anda ialah AI Sendiri, pembantu yang mesra dan suka membantu, yang berjalan secara peribadi dalam telefon pengguna. Beri jawapan yang jelas dan ringkas. Balas dalam bahasa yang digunakan oleh pengguna. Jika tidak pasti, beritahu dengan jujur.",
+  "describe_system": "You describe images for a helper AI that cannot see them. Be accurate and complete. Never guess text you cannot read.",
+  "describe_prompt": "Describe this image for someone who cannot see it. First copy out all visible text exactly as written, keeping its language. Then describe what the image shows: objects, food, people, place, colours and anything unusual.",
+  "described_prefix": "Pengguna melampirkan gambar. Penerangan gambar (dalam bahasa Inggeris):",
+  "tasks": [
+    {"id": "notis-air", "kind": "screenshot BM", "image": "images/notis-air.png", "question": "Bila bekalan air akan terputus, dan kawasan mana yang terlibat?"},
+    {"id": "resit", "kind": "receipt BM", "image": "images/resit-kedai.png", "question": "Berapa jumlah yang perlu saya bayar, dan berapa harga teh tarik?"},
+    {"id": "whatsapp-ringkas", "kind": "chat screenshot Manglish", "image": "images/whatsapp.png", "question": "Ringkaskan perbualan dalam screenshot ni. Meeting pukul berapa?"},
+    {"id": "whatsapp-en", "kind": "chat screenshot, English question", "image": "images/whatsapp.png", "question": "Who can't come tomorrow and why?"},
+    {"id": "storage", "kind": "English screenshot, BM question", "image": "images/storage-full.png", "question": "Apa maksud mesej ni? Apa patut saya buat?"},
+    {"id": "carta", "kind": "chart BM", "image": "images/carta-belanja.png", "question": "Bulan mana perbelanjaan paling tinggi dan berapa?"},
+    {"id": "nasi-lemak", "kind": "photo food", "image": "images/photo-nasi-lemak.jpg", "question": "Ini makanan apa? Apa yang ada dalam pinggan ni?"},
+    {"id": "durian", "kind": "photo fruit", "image": "images/photo-durian.jpg", "question": "Buah apa ni? Cerita sikit pasal buah ni."},
+    {"id": "jalan-kl", "kind": "photo street", "image": "images/photo-jalan.jpg", "question": "Terangkan apa yang ada dalam gambar ni."}
+  ]
+}

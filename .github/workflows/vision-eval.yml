@@ -1,0 +1,102 @@
+name: Vision model check
+
+# Runs every candidate photo AI on the same screenshots and photos with Bahasa Melayu questions,
+# using the app's own prompt formatting and sampling, and commits the replies for review.
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main]
+    paths: ['tools/vision-eval/tasks.json', 'tools/vision-eval/models.json', 'tools/vision-eval/*.cpp', 'tools/vision-eval/*.py', '.github/workflows/vision-eval.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vision-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      models: ${{ steps.models.outputs.models }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: models
+        run: echo "models=$(jq -c keys_unsorted tools/vision-eval/models.json)" >> "$GITHUB_OUTPUT"
+
+  model:
+    needs: list
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        model: ${{ fromJSON(needs.list.outputs.models) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build
+        run: |
+          cmake -S tools/vision-eval -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j4 --target vision-eval
+
+      - name: Fetch photos
+        run: python tools/vision-eval/fetch_photos.py
+
+      - name: Run images
+        run: |
+          pip install huggingface_hub gguf
+          python tools/vision-eval/run_model.py '${{ matrix.model }}' build/vision-eval
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: result-${{ matrix.model }}
+          path: tools/vision-eval/results/
+
+  # Hugging Face search for small vision models, printed to the log for the next round.
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          pip install huggingface_hub
+          python - <<'PY'
+          from huggingface_hub import HfApi
+          api = HfApi()
+          for q in ["SEA-LION VL", "Gemma-SEA-LION", "gemma-4-E2B", "gemma-3n mmproj", "Malaysian vision", "VL GGUF"]:
+              print(f"== {q}")
+              for m in api.list_models(search=q, sort="downloads", limit=20):
+                  print(f"  {m.id}  downloads={m.downloads}")
+          for repo in ["aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF", "aisingapore/Gemma-SEA-LION-v4-4B-VL-GGUF", "ggml-org/gemma-4-E2B-it-GGUF"]:
+              try:
+                  print(repo, [(f.rfilename, f.size) for f in api.model_info(repo, files_metadata=True).siblings])
+              except Exception as e:
+                  print(repo, e)
+          PY
+
+  collect:
+    needs: model
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: tools/vision-eval/results
+          merge-multiple: true
+      - name: Commit replies
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add tools/vision-eval/results
+          git commit -m "Vision model check: replies from run ${{ github.run_number }}" || exit 0
+          for i in 1 2 3 4; do git pull --rebase && git push && exit 0; sleep $((i * 10)); done
+          exit 1

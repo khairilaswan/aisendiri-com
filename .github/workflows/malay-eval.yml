@@ -1,0 +1,88 @@
+name: Malay model check
+
+# Runs every candidate AI on the same Bahasa Melayu, Manglish and code-switching prompts,
+# using the app's own prompt formatting and sampling, and commits the replies for review.
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore: [main]
+    paths: ['tools/malay-eval/prompts.json', 'tools/malay-eval/models.json', 'tools/malay-eval/*.cpp', '.github/workflows/malay-eval.yml']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: malay-eval-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        model: [qwen2.5-0.5b, qwen3-0.6b, gemma3-1b, llama3.2-1b, sailor2-1b, malaysian-qwen2.5-0.5b,
+                qwen2.5-1.5b, qwen3-1.7b, malaysian-qwen2.5-1.5b, gemma3n-e2b, gemma3-4b, qwen3-4b-2507]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Build
+        run: |
+          cmake -S tools/malay-eval -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j4 --target malay-eval
+          cmake -S third_party/llama.cpp -B build-q -DCMAKE_BUILD_TYPE=Release -DLLAMA_CURL=OFF
+          cmake --build build-q -j4 --target llama-quantize
+
+      - name: Install Python tools
+        run: |
+          pip install huggingface_hub
+          pip install -r third_party/llama.cpp/requirements/requirements-convert_hf_to_gguf.txt
+
+      - name: Run prompts
+        run: python tools/malay-eval/run_model.py ${{ matrix.model }} build/malay-eval third_party/llama.cpp build-q/bin/llama-quantize
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ matrix.model }}
+          path: tools/malay-eval/results/
+
+  # Hugging Face search for Malay-tuned small models, printed to the log for the next round.
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          pip install huggingface_hub
+          python - <<'PY'
+          from huggingface_hub import HfApi
+          api = HfApi()
+          for q in ["Malaysian", "malay", "Sailor2", "SEA-LION", "mallam", "SeaLLM"]:
+              print(f"== {q}")
+              for m in api.list_models(search=q, sort="downloads", limit=25):
+                  print(f"  {m.id}  downloads={m.downloads}")
+          PY
+
+  collect:
+    needs: model
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: result-*
+          path: tools/malay-eval/results
+          merge-multiple: true
+      - name: Commit replies
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add tools/malay-eval/results
+          git commit -m "Malay model check: replies from run ${{ github.run_number }}" || exit 0
+          git push

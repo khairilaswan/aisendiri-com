@@ -36,14 +36,14 @@ class AndroidPhotoStore(
     private fun file(id: String) = File(dir, id.replace(Regex("[^A-Za-z0-9_.-]"), "_"))
 
     override suspend fun pick(): String? {
-        val uri = suspendCancellableCoroutine { cont -> picker { cont.resume(it) } } ?: return null
+        val uri = suspendCancellableCoroutine<Uri?> { cont -> picker { cont.resume(it) } } ?: return null
         return import(uri)
     }
 
     override suspend fun takePhoto(): String? {
         val shot = File(cameraDir, "shot.jpg").apply { delete() }
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.photos", shot)
-        val ok = suspendCancellableCoroutine { cont -> camera(uri) { cont.resume(it) } }
+        val ok = suspendCancellableCoroutine<Boolean> { cont -> camera(uri) { cont.resume(it) } }
         return try {
             if (ok && shot.length() > 0) import(Uri.fromFile(shot)) else null
         } finally {

@@ -4,6 +4,15 @@
     <!-- Only used to download AI files. Chats never leave the phone. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Only used while the user is talking to the AI. Speech is turned into text on the phone. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Lets the app find the phone's text-to-speech engines (Android 11+ package visibility). -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 
     <application
         android:name=".AiSendiriApplication"

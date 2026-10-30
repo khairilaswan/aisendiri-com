@@ -5,7 +5,9 @@ import com.aisendiri.shared.chat.ConversationStore
 import com.aisendiri.shared.device.DeviceProfile
 import com.aisendiri.shared.device.EngineConfig
 import com.aisendiri.shared.model.AiModel
+import com.aisendiri.shared.model.ModelFile
 import com.aisendiri.shared.settings.SettingsStore
+import com.aisendiri.shared.voice.VoiceServices
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -24,17 +26,17 @@ sealed interface DownloadState {
 }
 
 interface ModelRepository {
-    fun isInstalled(model: AiModel): Boolean
-    fun filePath(model: AiModel): String
+    fun isInstalled(model: ModelFile): Boolean
+    fun filePath(model: ModelFile): String
     /** Bytes already saved from an interrupted download, so it can resume. */
-    fun partialBytes(model: AiModel): Long
+    fun partialBytes(model: ModelFile): Long
 
     /**
      * Downloads, resumes and verifies [model]. Cancelling collection pauses the download;
      * collecting again resumes it.
      */
-    fun download(model: AiModel): Flow<DownloadState>
-    suspend fun delete(model: AiModel)
+    fun download(model: ModelFile): Flow<DownloadState>
+    suspend fun delete(model: ModelFile)
 }
 
 data class GenerationParams(
@@ -91,4 +93,5 @@ class AppServices(
     val settings: SettingsStore,
     val conversations: ConversationStore,
     val platform: PlatformActions,
+    val voice: VoiceServices,
 )

@@ -2,7 +2,7 @@ package com.aisendiri.shared.android
 
 import android.content.Context
 import android.os.StatFs
-import com.aisendiri.shared.model.AiModel
+import com.aisendiri.shared.model.ModelFile
 import com.aisendiri.shared.platform.DownloadError
 import com.aisendiri.shared.platform.DownloadState
 import com.aisendiri.shared.platform.ModelRepository
@@ -36,21 +36,21 @@ import java.security.MessageDigest
 class AndroidModelRepository(context: Context) : ModelRepository {
     private val dir = File(context.filesDir, "models").apply { mkdirs() }
 
-    private fun finalFile(model: AiModel) = File(dir, model.fileName)
-    private fun partFile(model: AiModel) = File(dir, model.fileName + ".part")
+    private fun finalFile(model: ModelFile) = File(dir, model.fileName)
+    private fun partFile(model: ModelFile) = File(dir, model.fileName + ".part")
 
-    override fun isInstalled(model: AiModel): Boolean = finalFile(model).let { it.isFile && it.length() > 0 }
-    override fun filePath(model: AiModel): String = finalFile(model).absolutePath
-    override fun partialBytes(model: AiModel): Long = partFile(model).length()
+    override fun isInstalled(model: ModelFile): Boolean = finalFile(model).let { it.isFile && it.length() > 0 }
+    override fun filePath(model: ModelFile): String = finalFile(model).absolutePath
+    override fun partialBytes(model: ModelFile): Long = partFile(model).length()
 
-    override suspend fun delete(model: AiModel) {
+    override suspend fun delete(model: ModelFile) {
         withContext(Dispatchers.IO) {
             finalFile(model).delete()
             partFile(model).delete()
         }
     }
 
-    override fun download(model: AiModel): Flow<DownloadState> = flow {
+    override fun download(model: ModelFile): Flow<DownloadState> = flow {
         emit(DownloadState.Preparing)
         if (isInstalled(model)) {
             emit(DownloadState.Done)
@@ -69,7 +69,7 @@ class AndroidModelRepository(context: Context) : ModelRepository {
             val finalTotal = transfer(model, part, remote?.size)
 
             emit(DownloadState.Verifying)
-            val problem = verify(part, finalTotal, remote?.sha256)
+            val problem = verify(part, finalTotal, model.magic, remote?.sha256)
             if (problem != null) {
                 part.delete()
                 emit(DownloadState.Failed(DownloadError.CORRUPT, problem))
@@ -92,7 +92,7 @@ class AndroidModelRepository(context: Context) : ModelRepository {
     }.flowOn(Dispatchers.IO)
 
     /** Downloads into [part], resuming from its current length. Returns the full file size. */
-    private suspend fun FlowCollector<DownloadState>.transfer(model: AiModel, part: File, knownSize: Long?): Long {
+    private suspend fun FlowCollector<DownloadState>.transfer(model: ModelFile, part: File, knownSize: Long?): Long {
         var existing = part.length()
         if (knownSize != null && existing == knownSize) return knownSize
 
@@ -145,11 +145,11 @@ class AndroidModelRepository(context: Context) : ModelRepository {
         }
     }
 
-    private suspend fun verify(file: File, expectedSize: Long, sha256: String?): String? {
+    private suspend fun verify(file: File, expectedSize: Long, magicText: String, sha256: String?): String? {
         if (file.length() != expectedSize) return "size ${file.length()} != $expectedSize"
         val magic = ByteArray(4)
         file.inputStream().use { if (it.read(magic) != 4) return "file too small" }
-        if (String(magic, Charsets.US_ASCII) != "GGUF") return "not a GGUF file"
+        if (String(magic, Charsets.US_ASCII) != magicText) return "unexpected file type"
         if (sha256 == null) return null
         val digest = MessageDigest.getInstance("SHA-256")
         file.inputStream().use { input ->
@@ -168,7 +168,7 @@ class AndroidModelRepository(context: Context) : ModelRepository {
     private data class RemoteInfo(val size: Long, val sha256: String?)
 
     /** Asks Hugging Face for the file's exact size and SHA-256. Returns null if it isn't listed. */
-    private fun fetchRemoteInfo(model: AiModel): RemoteInfo? {
+    private fun fetchRemoteInfo(model: ModelFile): RemoteInfo? {
         val conn = open("https://huggingface.co/api/models/${model.hfRepo}/tree/main")
         try {
             if (conn.responseCode != HttpURLConnection.HTTP_OK) throw ServerException("HTTP ${conn.responseCode}")

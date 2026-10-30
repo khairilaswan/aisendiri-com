@@ -1,6 +1,7 @@
 package com.aisendiri.shared.settings
 
 import kotlinx.coroutines.flow.StateFlow
+import com.aisendiri.shared.voice.SpeechLanguage
 import kotlinx.serialization.Serializable
 
 enum class AppLanguage { SYSTEM, ENGLISH, MALAY }
@@ -22,6 +23,14 @@ data class AppSettings(
     val repeatPenalty: Float = DEFAULT_REPEAT_PENALTY,
     val maxReplyTokens: Int = DEFAULT_MAX_REPLY_TOKENS,
     val customSystemPrompt: String? = null,
+    // Voice
+    val speechModelId: String? = null,
+    val speakReplies: Boolean = true,
+    val speechLanguage: SpeechLanguage = SpeechLanguage.APP,
+    val speechRate: Float = DEFAULT_SPEECH_RATE,
+    val fastListening: Boolean = true,
+    /** Starts listening again after the AI finishes speaking. */
+    val handsFree: Boolean = false,
 ) {
     /** Puts every Advanced value back to its default, keeping the user's other choices. */
     fun withAdvancedDefaults(): AppSettings = copy(
@@ -33,6 +42,10 @@ data class AppSettings(
         repeatPenalty = DEFAULT_REPEAT_PENALTY,
         maxReplyTokens = DEFAULT_MAX_REPLY_TOKENS,
         customSystemPrompt = null,
+        speechLanguage = SpeechLanguage.APP,
+        speechRate = DEFAULT_SPEECH_RATE,
+        fastListening = true,
+        handsFree = false,
     )
 
     companion object {
@@ -41,6 +54,7 @@ data class AppSettings(
         const val DEFAULT_MIN_P = 0.05f
         const val DEFAULT_REPEAT_PENALTY = 1.1f
         const val DEFAULT_MAX_REPLY_TOKENS = 512
+        const val DEFAULT_SPEECH_RATE = 1.0f
     }
 }
 

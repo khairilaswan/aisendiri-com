@@ -1,14 +1,22 @@
 package com.aisendiri.app
 
+import android.Manifest
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import com.aisendiri.shared.ui.App
 
 class MainActivity : ComponentActivity() {
+    private var micResult: ((Boolean) -> Unit)? = null
+    private val micPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        micResult?.invoke(granted)
+        micResult = null
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -22,11 +30,21 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        app.micRequester = { onResult ->
+            micResult = onResult
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (!controller.back()) {
                     isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
+                    app.micRequester = { onResult ->
+            micResult = onResult
+            micPermission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+
+        onBackPressedDispatcher.onBackPressed()
                     isEnabled = true
                 }
             }
@@ -36,7 +54,10 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        (application as AiSendiriApplication).screenOnListener = null
+        (application as AiSendiriApplication).apply {
+            screenOnListener = null
+            micRequester = null
+        }
         super.onDestroy()
     }
 }

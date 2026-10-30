@@ -205,7 +205,7 @@ private fun SuggestionCard(icon: ImageVector, label: String, modifier: Modifier,
 }
 
 @Composable
-private fun MessageBubble(msg: ChatMessage, onCopy: (() -> Unit)?, onReport: (() -> Unit)?) {
+internal fun MessageBubble(msg: ChatMessage, onCopy: (() -> Unit)?, onReport: (() -> Unit)?) {
     val s = LocalStrings.current
     val mine = msg.role == Role.USER
     if (mine) {

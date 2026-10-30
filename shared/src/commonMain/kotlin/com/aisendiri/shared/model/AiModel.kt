@@ -1,5 +1,18 @@
 package com.aisendiri.shared.model
 
+/** A file the app downloads from Hugging Face: a chat AI or a speech-recognition model. */
+interface ModelFile {
+    val id: String
+    val hfRepo: String
+    val fileName: String
+    val approxSizeMb: Int
+    /** The first four bytes of a valid file, checked after download. */
+    val magic: String
+
+    val downloadUrl: String get() = "https://huggingface.co/$hfRepo/resolve/main/$fileName"
+    val approxSizeBytes: Long get() = approxSizeMb * 1024L * 1024L
+}
+
 /** How a model is presented to beginners. Technical details only show in Advanced mode. */
 enum class ModelTier { FAST, BALANCED, SMART }
 
@@ -10,23 +23,22 @@ enum class ModelTier { FAST, BALANCED, SMART }
  * RAM values are in GiB as Android reports them: a "4 GB" phone reports about 3.6.
  */
 data class AiModel(
-    val id: String,
+    override val id: String,
     val tier: ModelTier,
     val family: String,
     val parameters: String,
     val quantization: String,
-    val hfRepo: String,
-    val fileName: String,
-    val approxSizeMb: Int,
+    override val hfRepo: String,
+    override val fileName: String,
+    override val approxSizeMb: Int,
     val minRamGb: Double,
     val recommendedRamGb: Double,
     val license: String,
     val licenseUrl: String,
     /** Hidden from beginners; only listed in Advanced mode. */
     val advancedOnly: Boolean = false,
-) {
-    val downloadUrl: String get() = "https://huggingface.co/$hfRepo/resolve/main/$fileName"
-    val approxSizeBytes: Long get() = approxSizeMb * 1024L * 1024L
+) : ModelFile {
+    override val magic: String get() = "GGUF"
 }
 
 object ModelCatalog {

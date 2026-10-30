@@ -12,6 +12,9 @@ settings model and all text live in `shared/src/commonMain`. Platform work sits 
 | `ModelRepository` | `AndroidModelRepository` (HttpURLConnection, resume via Range, SHA-256) | `URLSession` background download |
 | `ChatEngine` | `LlamaChatEngine` → `llama/` JNI → llama.cpp | llama.cpp XCFramework + Metal |
 | `SettingsStore`, `ConversationStore` | SharedPreferences, JSON files | `NSUserDefaults`, files |
+| `SpeechToText` | `WhisperSpeechToText` → `llama/` JNI → whisper.cpp | same, Core ML encoder optional |
+| `VoiceRecorder` | `AndroidVoiceRecorder` (AudioRecord, 16 kHz mono, memory only) | `AVAudioEngine` |
+| `Speaker` | `AndroidSpeaker` (system TextToSpeech, offline voices only) | `AVSpeechSynthesizer` |
 | `PlatformActions` | Intents (share, report email) | UIKit equivalents |
 
 `AppController` (commonMain) owns app state and navigation; screens only render it.
@@ -41,3 +44,20 @@ else none. If the first-run test fails, it offers the next smaller model. Defaul
 Files go to app-private storage (`files/models`). A `.part` file allows pause/resume. Before the rename to the
 final name the app checks the size and SHA-256 published by the Hugging Face API, and the GGUF magic bytes.
 Model files are weights (data), not executable code.
+
+## Voice (Talk)
+
+- Speech to text: whisper.cpp pinned as a submodule (`third_party/whisper.cpp`). Only its `src/whisper.cpp` is
+  compiled, into `libaisendiri_whisper.so`, linked against llama.cpp's ggml. One ggml means one set of CPU
+  backends and no duplicate symbols. Its Kotlin binding is `WhisperNative` in the `llama/` module.
+- Models: Whisper multilingual `small` q5_1 (~181 MB, default, the smallest that handles Bahasa Melayu well)
+  and `base` q5_1 (~57 MB, for phones under 3 GiB RAM), from `ggerganov/whisper.cpp` on Hugging Face. Same
+  download, resume and SHA-256 checks as chat AIs; the file magic is `lmgg` instead of `GGUF`.
+- Recognition language follows the app (ms/en), with a short Malay-English initial prompt for Manglish.
+  "Fast listening" sets `audio_ctx` to the clip length plus a margin instead of the full 30 s window.
+- End of speech: `Endpointer` (commonMain) uses loudness against an adaptive noise floor: stops after 1.3 s
+  of silence, gives up after 8 s with no speech, caps at 30 s. Audio is never written to disk.
+- Text to speech: Android `TextToSpeech`, preferring Google's engine (Samsung's has no Malay voice), offline
+  voices only. Falls back to an Indonesian voice for Malay, otherwise shows text and a button to install a
+  voice. Replies are spoken sentence by sentence while they stream, and the AI is asked for short spoken answers.
+- A voice conversation is saved like a normal chat, so it shows in history.

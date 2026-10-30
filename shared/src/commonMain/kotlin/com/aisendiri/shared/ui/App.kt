@@ -24,6 +24,7 @@ fun App(controller: AppController) {
                     is Screen.FirstRun -> FirstRunScreen(controller, screen.model)
                     Screen.Home -> HomeScreen(controller)
                     is Screen.Chat -> ChatScreen(controller)
+                    Screen.Talk -> TalkScreen(controller)
                     Screen.History -> HistoryScreen(controller)
                     Screen.Settings -> SettingsScreen(controller)
                     Screen.Models -> ModelsScreen(controller)

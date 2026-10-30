@@ -2,6 +2,9 @@ package com.aisendiri.shared.i18n
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.aisendiri.shared.model.ModelTier
+import com.aisendiri.shared.voice.SpeakerState
+import com.aisendiri.shared.voice.SpeechLanguage
+import com.aisendiri.shared.voice.SpeechTier
 
 /**
  * Every piece of text the user sees, in plain words. Technical terms only appear in
@@ -170,6 +173,46 @@ class Strings(
     val advLastSpeed: String,
     val advReset: String,
     val advReloadNote: String,
+    // Talk
+    val talkEmptyTitle: String,
+    val talkTapToSpeak: String,
+    val talkListening: String,
+    val talkListeningHint: String,
+    val talkTranscribing: String,
+    val talkSpeaking: String,
+    val talkStartSpeaking: String,
+    val talkDidNotHear: String,
+    val talkSttError: String,
+    val voiceStylePrompt: String,
+    val voiceSetupTitle: String,
+    val voiceSetupBody: String,
+    val voiceDownload: (String) -> String,
+    val micPermissionTitle: String,
+    val micPermissionBody: String,
+    val micAllow: String,
+    val micDenied: String,
+    val openAppSettings: String,
+    val voiceMissing: String,
+    val voiceCloseLanguage: String,
+    val voiceNoEngine: String,
+    val installVoice: String,
+    val checkAgain: String,
+    // Voice settings
+    val voiceSection: String,
+    val speakReplies: String,
+    val speakRepliesBody: String,
+    val voiceOutput: String,
+    val voiceStatus: (SpeakerState) -> String,
+    val speechModelTitle: String,
+    val speechTierName: (SpeechTier) -> String,
+    val speechTierDescription: (SpeechTier) -> String,
+    val advSpeechLanguage: String,
+    val speechLanguageLabel: (SpeechLanguage) -> String,
+    val advSpeechRate: String,
+    val advFastListening: String,
+    val advFastListeningHelp: String,
+    val advHandsFree: String,
+    val advHandsFreeHelp: String,
 )
 
 val LocalStrings = staticCompositionLocalOf { EnglishStrings }
@@ -319,7 +362,8 @@ val EnglishStrings = Strings(
     privacyBody = "Your chats are processed on your phone and saved only on your phone. " +
         "The app uses the internet only to download AI files, and it never sends your messages anywhere. " +
         "We check your phone's hardware (memory, storage, processor) to choose a suitable AI. " +
-        "We never read your photos, messages or contacts for this.",
+        "We never read your photos, messages or contacts for this. " +
+        "When you talk to the AI, your voice is turned into text on your phone and is never saved or sent anywhere.",
     about = "About",
     version = { "Version $it" },
     advancedMode = "Advanced mode",
@@ -346,6 +390,75 @@ val EnglishStrings = Strings(
     advLastSpeed = "Last reply speed",
     advReset = "Reset to defaults",
     advReloadNote = "Context and thread changes apply the next time the AI starts.",
+    talkEmptyTitle = "Ask me anything with your voice",
+    talkTapToSpeak = "Tap the button and start speaking",
+    talkListening = "Listening…",
+    talkListeningHint = "I'll stop when you pause, or tap to finish",
+    talkTranscribing = "Writing down what you said…",
+    talkSpeaking = "Speaking… tap to stop",
+    talkStartSpeaking = "Start speaking",
+    talkDidNotHear = "I didn't catch that. Try again, a little closer to the phone.",
+    talkSttError = "Voice recognition had a problem. Please try again.",
+    voiceStylePrompt = "This is a spoken conversation. Answer briefly, in two or three short sentences, " +
+        "in a natural spoken style, without lists, headings or symbols.",
+    voiceSetupTitle = "Set up voice",
+    voiceSetupBody = "To understand your voice without internet, AI Sendiri needs a voice recognition file. " +
+        "Download it once and it works offline after that.",
+    voiceDownload = { "Download ($it)" },
+    micPermissionTitle = "Allow the microphone",
+    micPermissionBody = "AI Sendiri needs the microphone to hear you. Your voice is processed on your phone " +
+        "and is never saved or sent anywhere.",
+    micAllow = "Allow microphone",
+    micDenied = "Microphone access is off. You can turn it on in the app's settings.",
+    openAppSettings = "Open settings",
+    voiceMissing = "Your phone doesn't have an offline voice for this language yet, so replies are shown as text. " +
+        "You can install one for free in your phone's voice settings.",
+    voiceCloseLanguage = "No Malay voice is installed, so a similar Indonesian voice is used. " +
+        "Install the Malay voice for a more natural accent.",
+    voiceNoEngine = "Your phone has no text-to-speech engine. Install \"Speech Services by Google\" " +
+        "from the Play Store to hear replies.",
+    installVoice = "Install voice",
+    checkAgain = "Check again",
+    voiceSection = "Voice",
+    speakReplies = "Read replies aloud",
+    speakRepliesBody = "When you talk, the AI answers with its voice",
+    voiceOutput = "AI voice",
+    voiceStatus = {
+        when (it) {
+            SpeakerState.CHECKING -> "Checking…"
+            SpeakerState.READY -> "Installed, works offline"
+            SpeakerState.CLOSE_LANGUAGE -> "Using a similar voice"
+            SpeakerState.MISSING_VOICE -> "Not installed"
+            SpeakerState.NO_ENGINE -> "Not available on this phone"
+        }
+    },
+    speechModelTitle = "Voice recognition",
+    speechTierName = {
+        when (it) {
+            SpeechTier.FAST -> "Fast voice"
+            SpeechTier.ACCURATE -> "Accurate voice"
+        }
+    },
+    speechTierDescription = {
+        when (it) {
+            SpeechTier.FAST -> "Smaller and quicker, but mishears Malay more often."
+            SpeechTier.ACCURATE -> "Understands Malay and English better."
+        }
+    },
+    advSpeechLanguage = "Speech recognition language",
+    speechLanguageLabel = {
+        when (it) {
+            SpeechLanguage.APP -> "Same as app"
+            SpeechLanguage.MALAY -> "Bahasa Melayu"
+            SpeechLanguage.ENGLISH -> "English"
+            SpeechLanguage.AUTO -> "Detect"
+        }
+    },
+    advSpeechRate = "Speaking speed",
+    advFastListening = "Fast listening",
+    advFastListeningHelp = "Only processes as much audio as you spoke. Much faster; turn off if words go missing.",
+    advHandsFree = "Hands-free conversation",
+    advHandsFreeHelp = "Start listening again automatically after the AI finishes speaking.",
 )
 
 val MalayStrings = Strings(
@@ -488,7 +601,8 @@ val MalayStrings = Strings(
     privacyBody = "Semua perbualan diproses dan disimpan dalam telefon anda sahaja. " +
         "Aplikasi ini menggunakan internet hanya untuk memuat turun fail AI, dan tidak pernah menghantar mesej anda ke mana-mana. " +
         "Untuk memilih AI yang sesuai, kami hanya menyemak perkakasan telefon (RAM, storan, pemproses), " +
-        "bukan gambar, mesej atau kenalan anda.",
+        "bukan gambar, mesej atau kenalan anda. " +
+        "Apabila anda bercakap dengan AI, suara anda ditukar kepada teks dalam telefon dan tidak pernah disimpan atau dihantar ke mana-mana.",
     about = "Tentang",
     version = { "Versi $it" },
     advancedMode = "Mod lanjutan",
@@ -515,4 +629,73 @@ val MalayStrings = Strings(
     advLastSpeed = "Kelajuan jawapan terakhir",
     advReset = "Tetapkan semula",
     advReloadNote = "Perubahan context dan thread berkuat kuasa selepas AI dihidupkan semula.",
+    talkEmptyTitle = "Tanya apa sahaja menggunakan suara anda",
+    talkTapToSpeak = "Tekan butang dan mula bercakap",
+    talkListening = "Sedang mendengar…",
+    talkListeningHint = "Saya akan berhenti apabila anda diam, atau tekan untuk selesai",
+    talkTranscribing = "Sedang menulis apa yang anda katakan…",
+    talkSpeaking = "Sedang bercakap… tekan untuk berhenti",
+    talkStartSpeaking = "Mula bercakap",
+    talkDidNotHear = "Maaf, suara anda tidak dapat ditangkap. Cuba lagi dan dekatkan telefon.",
+    talkSttError = "Pengecaman suara menghadapi masalah. Sila cuba semula.",
+    voiceStylePrompt = "Ini ialah perbualan secara lisan. Jawab dengan ringkas dalam dua atau tiga ayat pendek, " +
+        "dalam gaya percakapan yang biasa, tanpa senarai, tajuk atau simbol.",
+    voiceSetupTitle = "Sediakan suara",
+    voiceSetupBody = "Untuk memahami suara anda tanpa internet, AI Sendiri memerlukan fail pengecaman suara. " +
+        "Muat turun sekali sahaja, selepas itu ia berfungsi tanpa internet.",
+    voiceDownload = { "Muat turun ($it)" },
+    micPermissionTitle = "Benarkan mikrofon",
+    micPermissionBody = "AI Sendiri memerlukan mikrofon untuk mendengar anda. Suara anda diproses dalam telefon " +
+        "sahaja dan tidak pernah disimpan atau dihantar ke mana-mana.",
+    micAllow = "Benarkan mikrofon",
+    micDenied = "Akses mikrofon ditutup. Anda boleh menghidupkannya dalam tetapan aplikasi.",
+    openAppSettings = "Buka tetapan",
+    voiceMissing = "Telefon anda belum mempunyai suara luar talian untuk bahasa ini, jadi jawapan dipaparkan sebagai teks. " +
+        "Anda boleh memasangnya secara percuma dalam tetapan suara telefon.",
+    voiceCloseLanguage = "Suara Bahasa Melayu belum dipasang, jadi suara Bahasa Indonesia yang hampir sama digunakan. " +
+        "Pasang suara Bahasa Melayu untuk sebutan yang lebih tepat.",
+    voiceNoEngine = "Telefon anda tiada enjin suara. Pasang \"Speech Services by Google\" " +
+        "dari Play Store untuk mendengar jawapan.",
+    installVoice = "Pasang suara",
+    checkAgain = "Semak semula",
+    voiceSection = "Suara",
+    speakReplies = "Bacakan jawapan",
+    speakRepliesBody = "Apabila anda bercakap, AI menjawab dengan suara",
+    voiceOutput = "Suara AI",
+    voiceStatus = {
+        when (it) {
+            SpeakerState.CHECKING -> "Sedang menyemak…"
+            SpeakerState.READY -> "Sudah dipasang, berfungsi tanpa internet"
+            SpeakerState.CLOSE_LANGUAGE -> "Menggunakan suara yang hampir sama"
+            SpeakerState.MISSING_VOICE -> "Belum dipasang"
+            SpeakerState.NO_ENGINE -> "Tiada dalam telefon ini"
+        }
+    },
+    speechModelTitle = "Pengecaman suara",
+    speechTierName = {
+        when (it) {
+            SpeechTier.FAST -> "Suara Pantas"
+            SpeechTier.ACCURATE -> "Suara Tepat"
+        }
+    },
+    speechTierDescription = {
+        when (it) {
+            SpeechTier.FAST -> "Lebih kecil dan pantas, tetapi lebih kerap tersilap dengar Bahasa Melayu."
+            SpeechTier.ACCURATE -> "Lebih memahami Bahasa Melayu dan Bahasa Inggeris."
+        }
+    },
+    advSpeechLanguage = "Bahasa pengecaman suara",
+    speechLanguageLabel = {
+        when (it) {
+            SpeechLanguage.APP -> "Ikut aplikasi"
+            SpeechLanguage.MALAY -> "Bahasa Melayu"
+            SpeechLanguage.ENGLISH -> "English"
+            SpeechLanguage.AUTO -> "Kesan automatik"
+        }
+    },
+    advSpeechRate = "Kelajuan suara",
+    advFastListening = "Pendengaran pantas",
+    advFastListeningHelp = "Hanya memproses audio sepanjang anda bercakap. Jauh lebih pantas; matikan jika ada perkataan yang tertinggal.",
+    advHandsFree = "Perbualan tanpa sentuh",
+    advHandsFreeHelp = "Mula mendengar semula secara automatik selepas AI habis bercakap.",
 )

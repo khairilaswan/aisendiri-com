@@ -72,7 +72,7 @@ fun WelcomeScreen(c: AppController) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             FeatureRow(AppIcons.Chat, s.welcomeFeatureChat, null)
-            FeatureRow(AppIcons.Mic, s.welcomeFeatureVoice, s.comingSoon)
+            FeatureRow(AppIcons.Mic, s.welcomeFeatureVoice, null)
             FeatureRow(AppIcons.Camera, s.welcomeFeaturePhoto, s.comingSoon)
             FeatureRow(AppIcons.Image, s.welcomeFeatureImage, s.comingSoon)
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {

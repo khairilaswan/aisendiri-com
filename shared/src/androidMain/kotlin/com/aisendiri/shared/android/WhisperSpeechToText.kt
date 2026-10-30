@@ -52,6 +52,8 @@ class WhisperSpeechToText(private val context: Context) : SpeechToText {
         } else {
             0
         }
+        // People say about 3 words a second and Malay words are often 2-3 tokens.
+        val maxTokens = (audio.size / 16_000.0 * 10).toInt() + 32
         // A blocking native call can't be cancelled, so cancelling asks whisper.cpp to abort instead.
         return suspendCancellableCoroutine { cont ->
             val h = handle
@@ -62,7 +64,7 @@ class WhisperSpeechToText(private val context: Context) : SpeechToText {
             executor.execute {
                 val result = runCatching {
                     val bytes = WhisperNative.transcribe(
-                        h, audio, options.language, options.threads, audioCtx,
+                        h, audio, options.language, options.threads, audioCtx, maxTokens,
                         options.initialPrompt?.toByteArray(Charsets.UTF_8),
                     ) ?: error("Transcription failed")
                     String(bytes, Charsets.UTF_8).trim()

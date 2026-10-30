@@ -455,6 +455,9 @@ class AppController(
         private set
     var micDenied by mutableStateOf(false)
         private set
+    /** How long the last speech-to-text took, shown in Advanced mode. */
+    var lastSpeechMillis by mutableStateOf<Long?>(null)
+        private set
     private var talkJob: Job? = null
     private var finishListening = false
     private val sttMutex = Mutex()
@@ -470,6 +473,23 @@ class AppController(
 
     fun useSpeechModel(model: SpeechModel) {
         services.settings.update { it.copy(speechModelId = model.id) }
+    }
+
+    /**
+     * The faster speech model, when this phone is using the accurate one but is too slow for it
+     * and the user never picked it on purpose.
+     */
+    fun fasterSpeechSuggestion(): SpeechModel? {
+        val inUse = installedSpeechModel() ?: return null
+        val suited = SpeechCatalog.recommend(device)
+        return suited.takeIf {
+            settings.value.speechModelId == null && suited.approxSizeMb < inUse.approxSizeMb
+        }
+    }
+
+    fun switchToFasterSpeech(model: SpeechModel) {
+        useSpeechModel(model)
+        startDownload(model, thenTest = false)
     }
 
     fun openTalk() {
@@ -565,6 +585,7 @@ class AppController(
                     at += c.size
                 }
                 val language = speechLanguageCode()
+                val started = services.platform.nowMillis()
                 val result = if (ensureSpeech()) {
                     services.voice.stt.transcribe(
                         audio,
@@ -578,6 +599,7 @@ class AppController(
                 } else {
                     Result.failure(IllegalStateException("No speech model"))
                 }
+                lastSpeechMillis = services.platform.nowMillis() - started
                 val heard = result.getOrNull()?.let(SpeechText::cleanTranscript)
                 if (heard.isNullOrBlank()) {
                     talkNotice = if (result.isFailure) s.talkSttError else s.talkDidNotHear

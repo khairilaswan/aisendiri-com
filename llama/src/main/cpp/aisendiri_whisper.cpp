@@ -86,7 +86,7 @@ Java_com_aisendiri_llama_WhisperNative_abort(JNIEnv *, jobject, jlong handle) {
 extern "C" JNIEXPORT jbyteArray JNICALL
 Java_com_aisendiri_llama_WhisperNative_transcribe(
         JNIEnv *env, jobject, jlong handle, jfloatArray samples, jstring language,
-        jint threads, jint audio_ctx, jbyteArray initial_prompt) {
+        jint threads, jint audio_ctx, jint max_tokens, jbyteArray initial_prompt) {
     Session *s = session(handle);
     if (s == nullptr) return nullptr;
     s->abort = false;
@@ -108,6 +108,11 @@ Java_com_aisendiri_llama_WhisperNative_transcribe(
     params.suppress_blank = true;
     params.suppress_nst = true;
     params.audio_ctx = audio_ctx;
+    // Whisper normally re-decodes at higher temperatures when unsure, which on a phone can
+    // multiply the wait several times over. One pass is good enough for a chat question.
+    params.temperature_inc = 0.0f;
+    // A short question never needs more than this; it also stops runaway repetition loops.
+    params.max_tokens = max_tokens;
     if (!prompt.empty()) params.initial_prompt = prompt.c_str();
     params.abort_callback = [](void *user_data) -> bool {
         return static_cast<Session *>(user_data)->abort.load();

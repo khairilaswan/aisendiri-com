@@ -90,6 +90,18 @@ private fun VoiceNotices(c: AppController, speakReplies: Boolean, speaker: Speak
         Modifier.fillMaxWidth().padding(horizontal = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        c.fasterSpeechSuggestion()?.let { fast ->
+            val dl = c.downloads[fast.id]?.state
+            SectionCard(color = Malaysia.SkyTint) {
+                Text(s.fasterVoiceTip, style = MaterialTheme.typography.bodyMedium, color = Malaysia.Ink)
+                if (dl is DownloadState.Downloading) {
+                    BrutalProgress(if (dl.totalBytes > 0) dl.bytes.toFloat() / dl.totalBytes else null)
+                } else {
+                    Spacer(Modifier.height(10.dp))
+                    SecondaryButton(s.useFasterVoice(formatBytes(fast.approxSizeBytes)), { c.switchToFasterSpeech(fast) })
+                }
+            }
+        }
         if (speakReplies) SpeakerBanner(c, speaker)
         if (c.micDenied) {
             SectionCard(color = Malaysia.RedTint) {

@@ -56,12 +56,14 @@ class VoiceTest {
     }
 
     @Test
-    fun fourGbPhonesGetTheAccurateSpeechModel() {
-        fun phone(ramGb: Double) = DeviceProfile(
-            "samsung", "test", null, "14", 8, emptySet(), listOf("arm64-v8a"),
+    fun onlyNewerChipsGetTheAccurateSpeechModel() {
+        fun phone(ramGb: Double, dotProd: Boolean) = DeviceProfile(
+            "samsung", "test", null, "14", 8, if (dotProd) setOf("asimddp") else emptySet(), listOf("arm64-v8a"),
             (ramGb * DeviceProfile.GIB).toLong(), 0, false, 0, null, null, ThermalState.NORMAL, true, true,
         )
-        assertEquals(SpeechTier.ACCURATE, SpeechCatalog.recommend(phone(3.6)).tier)
-        assertEquals(SpeechTier.FAST, SpeechCatalog.recommend(phone(2.7)).tier)
+        // Galaxy A15 (Helio G99) has dot-product; Galaxy A51 (Exynos 9611) doesn't.
+        assertEquals(SpeechTier.ACCURATE, SpeechCatalog.recommend(phone(3.6, dotProd = true)).tier)
+        assertEquals(SpeechTier.FAST, SpeechCatalog.recommend(phone(3.6, dotProd = false)).tier)
+        assertEquals(SpeechTier.FAST, SpeechCatalog.recommend(phone(2.7, dotProd = true)).tier)
     }
 }

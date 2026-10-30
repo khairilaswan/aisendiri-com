@@ -26,6 +26,7 @@ object WhisperNative {
 
     /**
      * [samples] are 16 kHz mono floats. [audioCtx] 0 means the full 30-second window.
+     * [maxTokens] caps the text per segment; 0 means no limit.
      * Returns UTF-8 text, or null if it failed or was aborted.
      */
     external fun transcribe(
@@ -34,6 +35,7 @@ object WhisperNative {
         language: String,
         threads: Int,
         audioCtx: Int,
+        maxTokens: Int,
         initialPrompt: ByteArray?,
     ): ByteArray?
 

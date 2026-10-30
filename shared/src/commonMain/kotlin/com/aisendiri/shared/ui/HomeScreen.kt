@@ -3,7 +3,6 @@
 package com.aisendiri.shared.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,11 +18,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -32,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -47,58 +43,53 @@ fun HomeScreen(c: AppController) {
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).verticalScroll(rememberScrollState()),
     ) {
-        // Hero header
-        Box(
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-                .background(brandGradient)
-                .statusBarsPadding()
-                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 28.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        // Hero header: navy block with the flag's stripes underneath
+        Column(Modifier.fillMaxWidth().background(Malaysia.Navy)) {
+            Column(
+                Modifier.statusBarsPadding().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconBadge(AppIcons.Sparkle, size = 40.dp, warm = true)
-                    Spacer(Modifier.width(10.dp))
-                    Text(s.appName, style = MaterialTheme.typography.titleLarge, color = Color.White, modifier = Modifier.weight(1f))
-                    Box(
-                        Modifier.size(44.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.18f))
-                            .clickable { c.navigate(Screen.Settings) },
-                        contentAlignment = Alignment.Center,
-                    ) { Icon(AppIcons.Settings, s.settings, tint = Color.White) }
+                    IconBadge(AppIcons.Sparkle, size = 42.dp, warm = true)
+                    Spacer(Modifier.width(12.dp))
+                    Text(s.appName.uppercase(), style = MaterialTheme.typography.titleLarge, color = Color.White, modifier = Modifier.weight(1f))
+                    SquareIconButton(AppIcons.Settings, s.settings, { c.navigate(Screen.Settings) }, color = Color.White)
                 }
                 Text(s.homeGreeting, style = MaterialTheme.typography.headlineMedium, color = Color.White)
                 if (active != null) {
-                    Surface(color = Color.White.copy(alpha = 0.18f), contentColor = Color.White, shape = CircleShape) {
-                        Row(Modifier.padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(Modifier.size(8.dp).clip(CircleShape).background(Color(0xFF7CF5C0)))
-                            Spacer(Modifier.width(8.dp))
-                            Text(s.homeStatusReady + " · " + s.tierName(active.tier), style = MaterialTheme.typography.labelLarge)
-                        }
+                    Row(
+                        Modifier.brutal(CircleShape, Malaysia.Yellow, Malaysia.Ink, shadow = 0.dp).padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(Modifier.size(10.dp).brutal(CircleShape, Malaysia.Green, Malaysia.Ink, shadow = 0.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text(s.homeStatusReady + " · " + s.tierName(active.tier), style = MaterialTheme.typography.labelLarge, color = Malaysia.Ink)
                     }
                 }
             }
+            StripeBand()
         }
 
         Column(
             Modifier.padding(16.dp).navigationBarsPadding(),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             if (active == null) {
-                SectionCard {
-                    Text(s.homeStatusNoAi, style = MaterialTheme.typography.titleMedium)
+                SectionCard(color = Malaysia.YellowTint) {
+                    Text(s.homeStatusNoAi, style = MaterialTheme.typography.titleMedium, color = Malaysia.Ink)
                     Spacer(Modifier.size(12.dp))
                     BigButton(s.setUpAi, { c.startPhoneCheck() })
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FeatureTile(AppIcons.Chat, s.homeChatTitle, s.homeChatBody, null, highlighted = true, enabled = active != null, Modifier.weight(1f)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                FeatureTile(AppIcons.Chat, s.homeChatTitle, s.homeChatBody, null, Malaysia.Yellow, enabled = active != null, Modifier.weight(1f)) {
                     c.openChat(null)
                 }
-                FeatureTile(AppIcons.Mic, s.homeTalkTitle, s.homeTalkBody, s.comingSoon, highlighted = false, enabled = false, Modifier.weight(1f)) {}
+                FeatureTile(AppIcons.Mic, s.homeTalkTitle, s.homeTalkBody, s.comingSoon, Malaysia.SkyTint, enabled = false, Modifier.weight(1f)) {}
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                FeatureTile(AppIcons.Camera, s.homePhotoTitle, s.homePhotoBody, s.comingSoon, highlighted = false, enabled = false, Modifier.weight(1f)) {}
-                FeatureTile(AppIcons.Image, s.homeImageTitle, s.homeImageBody, s.comingSoon, highlighted = false, enabled = false, Modifier.weight(1f)) {}
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                FeatureTile(AppIcons.Camera, s.homePhotoTitle, s.homePhotoBody, s.comingSoon, Malaysia.RedTint, enabled = false, Modifier.weight(1f)) {}
+                FeatureTile(AppIcons.Image, s.homeImageTitle, s.homeImageBody, s.comingSoon, Malaysia.YellowTint, enabled = false, Modifier.weight(1f)) {}
             }
             SectionCard {
                 ListRow(AppIcons.History, s.chatHistory, onClick = { c.loadHistory(); c.navigate(Screen.History) })
@@ -120,34 +111,33 @@ private fun FeatureTile(
     title: String,
     body: String,
     badge: String?,
-    highlighted: Boolean,
+    color: Color,
     enabled: Boolean,
     modifier: Modifier,
     onClick: () -> Unit,
 ) {
-    val shape = MaterialTheme.shapes.large
-    val base = modifier.aspectRatio(0.92f).clip(shape)
-    val background = if (highlighted && enabled) {
-        base.background(brandGradient)
-    } else {
-        base.background(MaterialTheme.colorScheme.surface)
-    }
-    val fg = if (highlighted && enabled) Color.White else MaterialTheme.colorScheme.onSurface
-    Box(background.clickable(enabled = enabled, onClick = onClick).padding(16.dp)) {
-        Column(Modifier.fillMaxSize().alpha(if (enabled || highlighted) 1f else 0.6f)) {
-            if (highlighted && enabled) {
-                Box(Modifier.size(48.dp).clip(MaterialTheme.shapes.small).background(Color.White.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
-                    Icon(icon, null, tint = Color.White, modifier = Modifier.size(26.dp))
-                }
-            } else {
-                IconTile(icon, size = 48.dp)
+    // Coming-soon tiles keep their colour so the grid stays bright, but look muted and don't react.
+    PressableBlock(
+        onClick,
+        color,
+        modifier.padding(end = ShadowOffset, bottom = ShadowOffset).aspectRatio(0.9f),
+        enabled = enabled,
+        shape = MaterialTheme.shapes.large,
+        disabledColor = color,
+    ) {
+        Box(Modifier.fillMaxSize().padding(14.dp)) {
+            Column(Modifier.fillMaxSize().alpha(if (badge == null) 1f else 0.55f)) {
+                Box(
+                    Modifier.size(48.dp).brutal(MaterialTheme.shapes.small, Color.White, Malaysia.Ink, shadow = 0.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(icon, null, tint = Malaysia.Ink, modifier = Modifier.size(26.dp)) }
+                Spacer(Modifier.weight(1f))
+                Text(title, style = MaterialTheme.typography.titleMedium, color = Malaysia.Ink)
+                Text(body, style = MaterialTheme.typography.bodyMedium, color = Malaysia.Ink.copy(alpha = 0.8f), maxLines = 2)
             }
-            Spacer(Modifier.weight(1f))
-            Text(title, style = MaterialTheme.typography.titleMedium, color = fg)
-            Text(body, style = MaterialTheme.typography.bodyMedium, color = fg.copy(alpha = 0.8f), maxLines = 2)
-        }
-        if (badge != null) {
-            Box(Modifier.align(Alignment.TopEnd)) { Badge(badge) }
+            if (badge != null) {
+                Box(Modifier.align(Alignment.TopEnd)) { Pill(badge, Color.White) }
+            }
         }
     }
 }

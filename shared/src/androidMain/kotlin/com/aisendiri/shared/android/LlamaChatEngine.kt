@@ -5,6 +5,7 @@ import com.aisendiri.llama.LlamaNative
 import com.aisendiri.shared.chat.ChatMessage
 import com.aisendiri.shared.chat.Role
 import com.aisendiri.shared.chat.StopFilter
+import com.aisendiri.shared.chat.ThoughtFilter
 import com.aisendiri.shared.device.EngineConfig
 import com.aisendiri.shared.model.AiModel
 import com.aisendiri.shared.model.VisionAddon
@@ -84,6 +85,7 @@ class LlamaChatEngine(private val context: Context, private val photos: PhotoSto
         var history = messages
         var trimmed = false
         var promptTokens: Int
+        var mayThink = false
         val withPhotos = _visionId.value != null
         val loaded = mutableMapOf<String, Photo>()
         while (true) {
@@ -105,6 +107,7 @@ class LlamaChatEngine(private val context: Context, private val photos: PhotoSto
                 emit(GenerationEvent.Failed("Chat template failed"))
                 return@flow
             }
+            mayThink = String(prompt, Charsets.UTF_8).contains("<|channel>thought")
             promptTokens = if (shown.isEmpty()) {
                 LlamaNative.startCompletion(
                     h, prompt, reserve, params.temperature, params.topP, params.minP, params.repeatPenalty, Random.nextInt(),
@@ -138,19 +141,23 @@ class LlamaChatEngine(private val context: Context, private val photos: PhotoSto
         var generated = 0
         var finish = FinishReason.DONE
         val stops = StopFilter()
+        val thoughts = ThoughtFilter(mayThink)
+        var answerTokens = 0
         while (true) {
             currentCoroutineContext().ensureActive() // Stop button cancels here
-            if (generated >= params.maxTokens) {
+            // Hidden notes don't count against the reply length, but are capped too.
+            if (answerTokens >= params.maxTokens || generated >= params.maxTokens + MAX_NOTE_TOKENS) {
                 finish = FinishReason.LENGTH
                 break
             }
             val bytes = LlamaNative.nextToken(h) ?: break
             generated++
-            val text = stops.add(String(bytes, Charsets.UTF_8))
+            if (thoughts.answering) answerTokens++
+            val text = stops.add(thoughts.add(String(bytes, Charsets.UTF_8)))
             if (text.isNotEmpty()) emit(GenerationEvent.Text(text))
             if (stops.stopped) break
         }
-        stops.flush().takeIf { it.isNotEmpty() }?.let { emit(GenerationEvent.Text(it)) }
+        (stops.add(thoughts.flush()) + stops.flush()).takeIf { it.isNotEmpty() }?.let { emit(GenerationEvent.Text(it)) }
         if (trimmed && finish == FinishReason.DONE) finish = FinishReason.CONTEXT_FULL
         val seconds = (System.nanoTime() - start) / 1e9
         emit(GenerationEvent.Done(GenerationStats(promptTokens, generated, if (seconds > 0) generated / seconds else 0.0, finish)))
@@ -167,3 +174,6 @@ class LlamaChatEngine(private val context: Context, private val photos: PhotoSto
         }.getOrElse { "engine unavailable: ${it.message}" }
     }
 }
+
+/** Most tokens of hidden notes before an answer (see [ThoughtFilter]). */
+private const val MAX_NOTE_TOKENS = 1024

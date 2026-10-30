@@ -166,8 +166,8 @@ void build_sampler(Session *s, float temperature, float top_p, float min_p, floa
 }
 
 // Gemma 4 has no built-in template in llama.cpp, so its turn format is written out here.
-// The empty thought block switches thinking off: without it Gemma-SEA-LION E2B writes its
-// reasoning into the reply, even though its own template doesn't add the block.
+// The empty thought block asks for no thinking. Gemma-SEA-LION E2B still often writes notes first;
+// the app hides them (ThoughtFilter).
 std::string format_gemma4(const std::vector<std::string> &roles, const std::vector<std::string> &contents) {
     std::string out;
     for (size_t i = 0; i < roles.size(); i++) {

@@ -32,7 +32,8 @@ settings model and all text live in `shared/src/commonMain`. Platform work sits 
   If the chat outgrows the context window, the oldest messages are dropped.
 - Text crosses JNI as UTF-8 bytes; incomplete multi-byte characters are held back until complete.
 - Gemma 4 based AIs (SEA-LION v4.5 E2B) have no built-in llama.cpp template, so `aisendiri_llama.cpp` writes their
-  turn format itself, with an empty thought block so they answer without thinking out loud.
+  turn format itself, with an empty thought block. SEA-LION E2B often writes English notes before its answer anyway,
+  ending them with `<channel|>`; `ThoughtFilter` holds the reply back and drops the notes.
 
 ## Choosing an AI
 

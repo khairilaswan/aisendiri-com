@@ -1,0 +1,63 @@
+name: Android build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install NDK and CMake
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;29.0.13113456" "cmake;3.31.6" > /dev/null
+
+      - name: Unit tests
+        run: ./gradlew :shared:testDebugUnitTest --stacktrace
+
+      - name: Build debug APK
+        run: ./gradlew :androidApp:assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: |
+          mkdir -p dist
+          cp androidApp/build/outputs/apk/debug/androidApp-debug.apk "dist/AiSendiri-debug-${{ github.run_number }}.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AiSendiri-debug-${{ github.run_number }}
+          path: dist/*.apk
+
+      # A pre-release per build on main gives a direct download link that works from a phone browser.
+      - name: Publish test build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: debug-${{ github.run_number }}
+          name: Test build ${{ github.run_number }}
+          prerelease: true
+          make_latest: false
+          body: |
+            Debug test build from ${{ github.sha }}.
+            Install guide: docs/INSTALL-ANDROID.md
+          files: dist/*.apk

@@ -10,7 +10,7 @@ import kotlin.math.sqrt
  */
 class Endpointer(
     sampleRate: Int = SAMPLE_RATE,
-    private val silenceToStopMs: Int = 1300,
+    private val silenceToStopMs: Int = 1000,
     private val noSpeechTimeoutMs: Int = 8000,
     private val maxMs: Int = 30_000,
 ) {

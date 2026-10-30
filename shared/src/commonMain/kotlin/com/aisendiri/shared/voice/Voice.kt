@@ -53,12 +53,15 @@ object SpeechCatalog {
     fun byId(id: String?): SpeechModel? = all.firstOrNull { it.id == id }
 
     /**
-     * Whisper "small" is the smallest model that understands Bahasa Melayu reasonably well,
-     * so every phone that can hold it gets it. "base" is the fallback for low-memory phones.
+     * Whisper "small" understands Bahasa Melayu best, but it is about three times slower than
+     * "base". Phones without ARMv8.2 dot-product instructions (like the Galaxy A51) take far too
+     * long with it, so they get "base"; newer chips with enough memory get "small".
      */
     fun recommend(device: DeviceProfile?): SpeechModel {
-        val ram = device?.totalRamGb ?: return all.last()
-        return all.sortedByDescending { it.approxSizeMb }.firstOrNull { ram >= it.minRamGb } ?: all.first()
+        val fast = all.first { it.tier == SpeechTier.FAST }
+        val accurate = all.first { it.tier == SpeechTier.ACCURATE }
+        if (device == null) return fast
+        return if (device.hasDotProd && device.totalRamGb >= accurate.minRamGb) accurate else fast
     }
 }
 

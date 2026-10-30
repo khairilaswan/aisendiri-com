@@ -213,6 +213,9 @@ class Strings(
     val advFastListeningHelp: String,
     val advHandsFree: String,
     val advHandsFreeHelp: String,
+    val fasterVoiceTip: String,
+    val useFasterVoice: (String) -> String,
+    val speechTimeLabel: (Long) -> String,
 )
 
 val LocalStrings = staticCompositionLocalOf { EnglishStrings }
@@ -459,6 +462,9 @@ val EnglishStrings = Strings(
     advFastListeningHelp = "Only processes as much audio as you spoke. Much faster; turn off if words go missing.",
     advHandsFree = "Hands-free conversation",
     advHandsFreeHelp = "Start listening again automatically after the AI finishes speaking.",
+    fasterVoiceTip = "Voice recognition is slow on this phone. The Fast voice file understands you in a few seconds instead.",
+    useFasterVoice = { "Use Fast voice ($it)" },
+    speechTimeLabel = { "Voice recognition took ${formatGb(it / 1000.0)} s" },
 )
 
 val MalayStrings = Strings(
@@ -698,4 +704,7 @@ val MalayStrings = Strings(
     advFastListeningHelp = "Hanya memproses audio sepanjang anda bercakap. Jauh lebih pantas; matikan jika ada perkataan yang tertinggal.",
     advHandsFree = "Perbualan tanpa sentuh",
     advHandsFreeHelp = "Mula mendengar semula secara automatik selepas AI habis bercakap.",
+    fasterVoiceTip = "Pengecaman suara agak perlahan pada telefon ini. Fail Suara Pantas boleh memahami anda dalam beberapa saat sahaja.",
+    useFasterVoice = { "Guna Suara Pantas ($it)" },
+    speechTimeLabel = { "Pengecaman suara mengambil masa ${formatGb(it / 1000.0)} saat" },
 )

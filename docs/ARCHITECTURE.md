@@ -50,12 +50,12 @@ Model files are weights (data), not executable code.
 - Speech to text: whisper.cpp pinned as a submodule (`third_party/whisper.cpp`). Only its `src/whisper.cpp` is
   compiled, into `libaisendiri_whisper.so`, linked against llama.cpp's ggml. One ggml means one set of CPU
   backends and no duplicate symbols. Its Kotlin binding is `WhisperNative` in the `llama/` module.
-- Models: Whisper multilingual `small` q5_1 (~181 MB, default, the smallest that handles Bahasa Melayu well)
-  and `base` q5_1 (~57 MB, for phones under 3 GiB RAM), from `ggerganov/whisper.cpp` on Hugging Face. Same
+- Models: Whisper multilingual `small` q5_1 (~181 MB, default on chips with ARMv8.2 dot-product, best for Bahasa Melayu)
+  and `base` q5_1 (~57 MB, ~3x faster, default on older chips such as the A51 and on phones under 3 GiB RAM), from `ggerganov/whisper.cpp` on Hugging Face. Same
   download, resume and SHA-256 checks as chat AIs; the file magic is `lmgg` instead of `GGUF`.
 - Recognition language follows the app (ms/en), with a short Malay-English initial prompt for Manglish.
-  "Fast listening" sets `audio_ctx` to the clip length plus a margin instead of the full 30 s window.
-- End of speech: `Endpointer` (commonMain) uses loudness against an adaptive noise floor: stops after 1.3 s
+  "Fast listening" sets `audio_ctx` to the clip length plus a margin instead of the full 30 s window. Temperature fallback is off (one decoding pass) and tokens are capped by clip length, so a hard clip can't multiply the wait.
+- End of speech: `Endpointer` (commonMain) uses loudness against an adaptive noise floor: stops after 1 s
   of silence, gives up after 8 s with no speech, caps at 30 s. Audio is never written to disk.
 - Text to speech: Android `TextToSpeech`, preferring Google's engine (Samsung's has no Malay voice), offline
   voices only. Falls back to an Indonesian voice for Malay, otherwise shows text and a button to install a

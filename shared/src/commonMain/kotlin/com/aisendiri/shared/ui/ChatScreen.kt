@@ -2,7 +2,6 @@
 
 package com.aisendiri.shared.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,9 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -78,7 +75,7 @@ fun ChatScreen(c: AppController) {
         subtitle = if (loading) s.loadingAi else tierName?.let { "● " + s.homeStatusReady + " · " + it },
         onBack = { c.stopGeneration(); c.back() },
         actions = {
-            IconButton(onClick = { c.newChat() }, enabled = !c.isGenerating) { Icon(AppIcons.Add, s.newChat) }
+            SquareIconButton(AppIcons.Add, s.newChat, { c.newChat() }, Modifier.padding(end = 12.dp), color = Malaysia.Yellow, enabled = !c.isGenerating)
         },
         bottomBar = {
             Row(
@@ -91,9 +88,10 @@ fun ChatScreen(c: AppController) {
                     value = input,
                     onValueChange = { input = it },
                     placeholder = { Text(s.chatPlaceholder) },
-                    modifier = Modifier.weight(1f).heightIn(min = 52.dp),
+                    modifier = Modifier.weight(1f).heightIn(min = 52.dp)
+                        .brutal(MaterialTheme.shapes.medium, MaterialTheme.colorScheme.surface, ink, shadow = 0.dp),
                     maxLines = 6,
-                    shape = RoundedCornerShape(26.dp),
+                    shape = MaterialTheme.shapes.medium,
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = MaterialTheme.colorScheme.surface,
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -104,29 +102,23 @@ fun ChatScreen(c: AppController) {
                 )
                 val canSend = input.text.isNotBlank() && !loading
                 val generating = c.isGenerating
-                Box(
-                    Modifier.size(52.dp).clip(CircleShape)
-                        .background(
-                            when {
-                                generating -> MaterialTheme.colorScheme.secondary
-                                canSend -> MaterialTheme.colorScheme.primary
-                                else -> MaterialTheme.colorScheme.surfaceVariant
-                            },
-                        )
-                        .clickable(enabled = generating || canSend) {
-                            if (generating) {
-                                c.stopGeneration()
-                            } else {
-                                c.send(input.text)
-                                input = TextFieldValue("")
-                            }
-                        },
-                    contentAlignment = Alignment.Center,
+                PressableBlock(
+                    onClick = {
+                        if (generating) {
+                            c.stopGeneration()
+                        } else {
+                            c.send(input.text)
+                            input = TextFieldValue("")
+                        }
+                    },
+                    color = if (generating) Malaysia.Red else Malaysia.Yellow,
+                    modifier = Modifier.padding(end = ShadowOffset, bottom = ShadowOffset).size(52.dp),
+                    enabled = generating || canSend,
                 ) {
                     Icon(
                         if (generating) AppIcons.Stop else AppIcons.Send,
                         contentDescription = if (generating) s.stop else s.send,
-                        tint = if (generating || canSend) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (generating) Color.White else Malaysia.Ink,
                     )
                 }
             }
@@ -203,17 +195,11 @@ fun ChatScreen(c: AppController) {
 
 @Composable
 private fun SuggestionCard(icon: ImageVector, label: String, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.heightIn(min = 64.dp),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-    ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    PressableBlock(onClick, MaterialTheme.colorScheme.surface, modifier.padding(end = ShadowOffset, bottom = ShadowOffset).heightIn(min = 64.dp)) {
+        Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             IconTile(icon, size = 36.dp)
             Spacer(Modifier.width(10.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge)
+            Text(label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -224,32 +210,28 @@ private fun MessageBubble(msg: ChatMessage, onCopy: (() -> Unit)?, onReport: (()
     val mine = msg.role == Role.USER
     if (mine) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-            Surface(
-                color = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(22.dp, 22.dp, 6.dp, 22.dp),
-                modifier = Modifier.widthIn(max = 320.dp),
+            Box(
+                Modifier.padding(end = ShadowOffset, bottom = ShadowOffset).widthIn(max = 320.dp)
+                    .brutal(RoundedCornerShape(16.dp, 16.dp, 2.dp, 16.dp), Malaysia.Navy, ink),
             ) {
                 SelectionContainer {
-                    Text(msg.text, Modifier.padding(horizontal = 16.dp, vertical = 11.dp), style = MaterialTheme.typography.bodyLarge)
+                    Text(msg.text, Modifier.padding(horizontal = 16.dp, vertical = 11.dp), style = MaterialTheme.typography.bodyLarge, color = Color.White)
                 }
             }
         }
         return
     }
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-        IconBadge(AppIcons.Sparkle, size = 32.dp, warm = true)
+        IconBadge(AppIcons.Sparkle, size = 34.dp, warm = true)
+        Spacer(Modifier.width(ShadowOffset))
         Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f, fill = false)) {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-                shape = RoundedCornerShape(6.dp, 22.dp, 22.dp, 22.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                modifier = Modifier.widthIn(max = 320.dp),
+            Box(
+                Modifier.padding(end = ShadowOffset, bottom = ShadowOffset).widthIn(max = 320.dp)
+                    .brutal(RoundedCornerShape(2.dp, 16.dp, 16.dp, 16.dp), MaterialTheme.colorScheme.surface, ink),
             ) {
                 SelectionContainer {
-                    Text(msg.text, Modifier.padding(horizontal = 16.dp, vertical = 11.dp), style = MaterialTheme.typography.bodyLarge)
+                    Text(msg.text, Modifier.padding(horizontal = 16.dp, vertical = 11.dp), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
                 }
             }
             if (onCopy != null) {

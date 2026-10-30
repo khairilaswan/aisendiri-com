@@ -16,9 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -194,26 +192,24 @@ fun ModelsScreen(c: AppController) {
                     Text(s.downloadSize(formatBytes(m.approxSizeBytes)), style = MaterialTheme.typography.bodyMedium)
                     val st = dl?.state
                     if (!installed && st is DownloadState.Downloading) {
-                        LinearProgressIndicator(
-                            progress = { if (st.totalBytes > 0) st.bytes.toFloat() / st.totalBytes else 0f },
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        )
+                        BrutalProgress(if (st.totalBytes > 0) st.bytes.toFloat() / st.totalBytes else null)
                         Text(s.downloadProgress(formatBytes(st.bytes), formatBytes(st.totalBytes)))
                     }
                     Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         when {
-                            installed && !inUse -> OutlinedButton(onClick = { c.useModel(m) }, shape = MaterialTheme.shapes.medium) { Text(s.useThisAi) }
+                            installed && !inUse -> SecondaryButton(s.useThisAi, { c.useModel(m) }, Modifier)
                             !installed && st is DownloadState.Downloading && dl?.paused != true ->
-                                OutlinedButton(onClick = { c.pauseDownload(m) }, shape = MaterialTheme.shapes.medium) { Text(s.pause) }
+                                SecondaryButton(s.pause, { c.pauseDownload(m) }, Modifier)
                             !installed -> {
                                 val usable = device == null || Recommender.compatibility(m, device).let {
                                     it == Compatibility.WORKS_WELL || it == Compatibility.MAY_BE_SLOW
                                 }
-                                OutlinedButton(
-                                    onClick = { c.startDownload(m, thenTest = false) },
+                                SecondaryButton(
+                                    if (dl?.paused == true) s.resume else s.download,
+                                    { c.startDownload(m, thenTest = false) },
+                                    Modifier,
                                     enabled = usable || settings.advancedMode,
-                                    shape = MaterialTheme.shapes.medium,
-                                ) { Text(if (dl?.paused == true) s.resume else s.download) }
+                                )
                             }
                         }
                         if (installed) TextButton(onClick = { confirmDelete = m }) { Text(s.delete) }
@@ -311,9 +307,7 @@ fun AdvancedScreen(c: AppController) {
                 Text(s.advEngine, style = MaterialTheme.typography.titleSmall)
                 Mono("status: ${c.engineStatus}\n$diagnostics")
             }
-            OutlinedButton(onClick = { c.updateSettings(AppSettings::withAdvancedDefaults); c.reloadEngine() }, Modifier.fillMaxWidth()) {
-                Text(s.advReset)
-            }
+            SecondaryButton(s.advReset, { c.updateSettings(AppSettings::withAdvancedDefaults); c.reloadEngine() }, Modifier.fillMaxWidth())
         }
     }
 }

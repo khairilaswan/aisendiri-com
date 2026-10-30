@@ -8,97 +8,101 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aisendiri.shared.settings.ThemeMode
 
-// Brand: deep teal with a warm sunset accent.
-private val Teal900 = Color(0xFF00423B)
-private val Teal700 = Color(0xFF00695C)
-private val Teal500 = Color(0xFF0E9F8C)
-private val Teal100 = Color(0xFFCDEFEA)
-private val Sunset = Color(0xFFFF7A59)
+/** Neo-brutalist palette from the Jalur Gemilang: navy, red, yellow and white, with black ink. */
+object Malaysia {
+    val Navy = Color(0xFF0B1F6B)
+    val Red = Color(0xFFD7141A)
+    val Yellow = Color(0xFFFFC72C)
+    val Cream = Color(0xFFFFF6E0)
+    val Ink = Color(0xFF111111)
+    val SkyTint = Color(0xFFCFDAFF)
+    val RedTint = Color(0xFFFFD4CF)
+    val YellowTint = Color(0xFFFFE9A8)
+    val Green = Color(0xFF1E9E6A)
+}
 
 private val LightColors = lightColorScheme(
-    primary = Teal700,
+    primary = Malaysia.Navy,
     onPrimary = Color.White,
-    primaryContainer = Teal100,
-    onPrimaryContainer = Teal900,
-    secondary = Color(0xFFE2603F),
+    primaryContainer = Malaysia.SkyTint,
+    onPrimaryContainer = Malaysia.Ink,
+    secondary = Malaysia.Red,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFFE3D9),
-    onSecondaryContainer = Color(0xFF5A1A08),
-    tertiary = Color(0xFF5B5BD6),
-    tertiaryContainer = Color(0xFFE4E4FF),
-    onTertiaryContainer = Color(0xFF1E1E6E),
-    background = Color(0xFFF4F7F6),
-    onBackground = Color(0xFF151D1C),
+    secondaryContainer = Malaysia.RedTint,
+    onSecondaryContainer = Malaysia.Ink,
+    tertiary = Malaysia.Yellow,
+    onTertiary = Malaysia.Ink,
+    tertiaryContainer = Malaysia.YellowTint,
+    onTertiaryContainer = Malaysia.Ink,
+    background = Malaysia.Cream,
+    onBackground = Malaysia.Ink,
     surface = Color.White,
-    onSurface = Color(0xFF151D1C),
-    surfaceVariant = Color(0xFFEAF0EE),
-    onSurfaceVariant = Color(0xFF52605D),
-    surfaceContainer = Color(0xFFEFF4F2),
-    surfaceContainerHigh = Color(0xFFE6EDEB),
-    outline = Color(0xFFC3CECB),
-    outlineVariant = Color(0xFFDCE4E2),
+    onSurface = Malaysia.Ink,
+    surfaceVariant = Color(0xFFF3EAD3),
+    onSurfaceVariant = Color(0xFF4A4A4A),
+    outline = Malaysia.Ink,
+    outlineVariant = Malaysia.Ink,
+    error = Malaysia.Red,
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF6FD6C5),
-    onPrimary = Color(0xFF00382F),
-    primaryContainer = Color(0xFF0B4F46),
-    onPrimaryContainer = Teal100,
-    secondary = Color(0xFFFFB199),
-    onSecondary = Color(0xFF5A1A08),
-    secondaryContainer = Color(0xFF6E2A15),
-    onSecondaryContainer = Color(0xFFFFE3D9),
-    tertiary = Color(0xFFBDBDFF),
-    tertiaryContainer = Color(0xFF34348A),
-    onTertiaryContainer = Color(0xFFE4E4FF),
-    background = Color(0xFF0D1312),
-    onBackground = Color(0xFFE1E8E6),
-    surface = Color(0xFF151C1B),
-    onSurface = Color(0xFFE1E8E6),
-    surfaceVariant = Color(0xFF1E2725),
-    onSurfaceVariant = Color(0xFFAAB8B4),
-    surfaceContainer = Color(0xFF19211F),
-    surfaceContainerHigh = Color(0xFF222B29),
-    outline = Color(0xFF3B4744),
-    outlineVariant = Color(0xFF2B3533),
+    primary = Malaysia.Yellow,
+    onPrimary = Malaysia.Ink,
+    primaryContainer = Color(0xFF26346E),
+    onPrimaryContainer = Color.White,
+    secondary = Color(0xFFFF5A52),
+    onSecondary = Malaysia.Ink,
+    secondaryContainer = Color(0xFF5C1A1A),
+    onSecondaryContainer = Color.White,
+    tertiary = Malaysia.Yellow,
+    onTertiary = Malaysia.Ink,
+    tertiaryContainer = Color(0xFF5A4A12),
+    onTertiaryContainer = Color.White,
+    background = Color(0xFF0A1033),
+    onBackground = Color(0xFFF4F1E8),
+    surface = Color(0xFF151C4A),
+    onSurface = Color(0xFFF4F1E8),
+    surfaceVariant = Color(0xFF1F275A),
+    onSurfaceVariant = Color(0xFFC9CCE0),
+    outline = Color(0xFFF4F1E8),
+    outlineVariant = Color(0xFFF4F1E8),
+    error = Color(0xFFFF5A52),
 )
 
 private val AppShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(36.dp),
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(20.dp),
 )
 
-// Slightly larger than Material defaults: easier to read for everyone.
+// Chunky, heavy headings are part of the neo-brutalist look; body text stays large and readable.
 private val AppTypography = Typography().run {
     copy(
-        displaySmall = displaySmall.copy(fontWeight = FontWeight.Bold),
-        headlineMedium = headlineMedium.copy(fontWeight = FontWeight.Bold, fontSize = 26.sp, lineHeight = 32.sp),
-        headlineSmall = headlineSmall.copy(fontWeight = FontWeight.Bold),
-        titleLarge = titleLarge.copy(fontWeight = FontWeight.SemiBold),
-        titleMedium = titleMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 17.sp),
+        displaySmall = displaySmall.copy(fontWeight = FontWeight.Black),
+        headlineMedium = headlineMedium.copy(fontWeight = FontWeight.Black, fontSize = 28.sp, lineHeight = 33.sp),
+        headlineSmall = headlineSmall.copy(fontWeight = FontWeight.Black),
+        titleLarge = titleLarge.copy(fontWeight = FontWeight.ExtraBold),
+        titleMedium = titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 17.sp),
         bodyLarge = bodyLarge.copy(fontSize = 17.sp, lineHeight = 25.sp),
         bodyMedium = bodyMedium.copy(fontSize = 15.sp, lineHeight = 21.sp),
-        labelLarge = labelLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
+        labelLarge = labelLarge.copy(fontSize = 16.sp, fontWeight = FontWeight.ExtraBold),
+        labelMedium = labelMedium.copy(fontWeight = FontWeight.Bold),
     )
 }
 
-/** The signature teal-to-green gradient used on hero areas and the main action. */
-val brandGradient: Brush
-    get() = Brush.linearGradient(listOf(Teal700, Teal500))
-
-/** A warm gradient for highlights such as the AI avatar. */
-val accentGradient: Brush
-    get() = Brush.linearGradient(listOf(Teal500, Sunset))
+/** Outline and hard-shadow colour: black on light, off-white on dark. */
+val ink: Color
+    @Composable @ReadOnlyComposable
+    get() = MaterialTheme.colorScheme.outline
 
 @Composable
 fun AiSendiriTheme(mode: ThemeMode, content: @Composable () -> Unit) {

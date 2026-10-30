@@ -12,21 +12,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -57,23 +51,21 @@ fun WelcomeScreen(c: AppController) {
     val settings by c.settings.collectAsState()
     val malay = c.strings(settings) === MalayStrings
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        // Hero
-        Box(
-            Modifier.fillMaxWidth()
-                .clip(RoundedCornerShape(bottomStart = 36.dp, bottomEnd = 36.dp))
-                .background(brandGradient)
-                .statusBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 28.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // Hero: navy block with the flag's stripes underneath
+        Column(Modifier.fillMaxWidth().background(Malaysia.Navy)) {
+            Column(
+                Modifier.statusBarsPadding().padding(horizontal = 24.dp, vertical = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconBadge(AppIcons.Sparkle, size = 48.dp, warm = true)
-                    Spacer(Modifier.width(12.dp))
-                    Text(s.appName, style = MaterialTheme.typography.titleLarge, color = Color.White)
+                    Spacer(Modifier.width(14.dp))
+                    Text(s.appName.uppercase(), style = MaterialTheme.typography.titleLarge, color = Color.White)
                 }
                 Text(s.welcomeTitle, style = MaterialTheme.typography.headlineMedium, color = Color.White)
-                Text(s.welcomeBody, style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = 0.88f))
+                Text(s.welcomeBody, style = MaterialTheme.typography.bodyLarge, color = Malaysia.YellowTint)
             }
+            StripeBand()
         }
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 20.dp),
@@ -89,17 +81,13 @@ fun WelcomeScreen(c: AppController) {
             }
         }
         Column(Modifier.padding(horizontal = 20.dp, vertical = 16.dp).navigationBarsPadding(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                SegmentedButton(
-                    selected = !malay,
-                    onClick = { c.updateSettings { it.copy(language = AppLanguage.ENGLISH) } },
-                    shape = SegmentedButtonDefaults.itemShape(0, 2),
-                ) { Text("English") }
-                SegmentedButton(
-                    selected = malay,
-                    onClick = { c.updateSettings { it.copy(language = AppLanguage.MALAY) } },
-                    shape = SegmentedButtonDefaults.itemShape(1, 2),
-                ) { Text("Bahasa Melayu") }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                LanguageToggle("English", !malay, Modifier.weight(1f)) {
+                    c.updateSettings { it.copy(language = AppLanguage.ENGLISH) }
+                }
+                LanguageToggle("Bahasa Melayu", malay, Modifier.weight(1f)) {
+                    c.updateSettings { it.copy(language = AppLanguage.MALAY) }
+                }
             }
             BigButton(s.getStarted, { c.startPhoneCheck() })
         }
@@ -107,10 +95,21 @@ fun WelcomeScreen(c: AppController) {
 }
 
 @Composable
+private fun LanguageToggle(label: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    PressableBlock(onClick, if (selected) Malaysia.SkyTint else MaterialTheme.colorScheme.surface, modifier.padding(end = ShadowOffset).heightIn(min = 48.dp)) {
+        Text(
+            (if (selected) "✓ " else "") + label,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (selected) Malaysia.Ink else MaterialTheme.colorScheme.onSurface,
+        )
+    }
+}
+
+@Composable
 private fun FeatureRow(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String, badge: String?) {
     SectionCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconTile(icon)
+            IconTile(icon, if (badge == null) Malaysia.Yellow else Malaysia.SkyTint)
             Spacer(Modifier.width(14.dp))
             Text(text, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
             if (badge != null) Badge(badge)
@@ -223,9 +222,8 @@ private fun ModelOptionsPage(c: AppController, padding: PaddingValues, onPick: (
             val usable = compat == Compatibility.WORKS_WELL || compat == Compatibility.MAY_BE_SLOW
             ModelCard(m, m.id == recommended?.id, device, settings.advancedMode) {
                 if (usable) {
-                    OutlinedButton(onClick = { onPick(m) }, Modifier.padding(top = 12.dp).fillMaxWidth(), shape = MaterialTheme.shapes.medium) {
-                        Text(s.continueLabel)
-                    }
+                    Spacer(Modifier.height(12.dp))
+                    SecondaryButton(s.continueLabel, { onPick(m) })
                 }
             }
         }
@@ -257,7 +255,7 @@ fun DownloadScreen(c: AppController, model: AiModel) {
                     is DownloadState.Downloading -> {
                         val fraction = if (st.totalBytes > 0) st.bytes.toFloat() / st.totalBytes else 0f
                         Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.Bottom) {
-                            Text("${(fraction * 100).toInt()}%", style = MaterialTheme.typography.displaySmall, color = MaterialTheme.colorScheme.primary)
+                            Text("${(fraction * 100).toInt()}%", style = MaterialTheme.typography.displaySmall)
                             Spacer(Modifier.weight(1f))
                             if (ui?.paused == true) {
                                 Text(s.paused, fontStyle = FontStyle.Italic)
@@ -265,11 +263,11 @@ fun DownloadScreen(c: AppController, model: AiModel) {
                                 Text(s.downloadSpeed(formatBytes(st.bytesPerSecond)), style = MaterialTheme.typography.bodyMedium)
                             }
                         }
-                        ProgressBar(fraction)
+                        BrutalProgress(fraction)
                         Text(s.downloadProgress(formatBytes(st.bytes), formatBytes(st.totalBytes)), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     is DownloadState.Verifying -> {
-                        ProgressBar(null)
+                        BrutalProgress(null)
                         Text(s.verifyingDownload)
                     }
                     is DownloadState.Failed -> Text(
@@ -284,22 +282,12 @@ fun DownloadScreen(c: AppController, model: AiModel) {
                         modifier = Modifier.padding(top = 8.dp),
                     )
                     else -> {
-                        ProgressBar(null)
+                        BrutalProgress(null)
                         Text(if (ui?.paused == true) s.paused else s.preparingDownload)
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ProgressBar(fraction: Float?) {
-    val mod = Modifier.fillMaxWidth().padding(vertical = 12.dp).height(10.dp).clip(RoundedCornerShape(5.dp))
-    if (fraction == null) {
-        LinearProgressIndicator(mod, trackColor = MaterialTheme.colorScheme.surfaceVariant)
-    } else {
-        LinearProgressIndicator(progress = { fraction }, modifier = mod, trackColor = MaterialTheme.colorScheme.surfaceVariant)
     }
 }
 

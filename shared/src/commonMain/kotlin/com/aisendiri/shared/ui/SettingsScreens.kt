@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -25,6 +24,11 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -55,22 +59,32 @@ fun HistoryScreen(c: AppController) {
         title = s.chatHistory,
         onBack = { c.back() },
         actions = {
-            if (c.conversations.isNotEmpty()) TextButton(onClick = { confirmAll = true }) { Text(s.delete) }
+            if (c.conversations.isNotEmpty()) {
+                IconButton(onClick = { confirmAll = true }) { Icon(AppIcons.Delete, s.deleteAllChats) }
+            }
         },
     ) { padding ->
         if (c.conversations.isEmpty()) {
             Text(s.historyEmpty, Modifier.padding(padding).padding(24.dp), style = MaterialTheme.typography.bodyLarge)
         }
-        LazyColumn(Modifier.fillMaxSize().padding(padding)) {
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             items(c.conversations, key = { it.id }) { conv ->
-                Row(
-                    Modifier.fillMaxWidth().clickable { c.openChat(conv.id) }.padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("💬 " + conv.title, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, maxLines = 2)
-                    TextButton(onClick = { c.deleteConversation(conv.id) }) { Text("🗑") }
+                SectionCard {
+                    ListRow(
+                        AppIcons.Chat,
+                        conv.title,
+                        onClick = { c.openChat(conv.id) },
+                        trailing = {
+                            IconButton(onClick = { c.deleteConversation(conv.id) }) {
+                                Icon(AppIcons.Delete, s.delete, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        },
+                    )
                 }
-                HorizontalDivider()
             }
         }
     }
@@ -97,31 +111,32 @@ fun SettingsScreen(c: AppController) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SectionCard {
-                Text(s.language, style = MaterialTheme.typography.titleMedium)
+                ListRow(AppIcons.Translate, s.language)
                 ChoiceRow(
                     listOf(AppLanguage.SYSTEM to s.languageSystem, AppLanguage.ENGLISH to "English", AppLanguage.MALAY to "Bahasa Melayu"),
                     settings.language,
                 ) { v -> c.updateSettings { it.copy(language = v) } }
-                Text(s.theme, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+                ListRow(AppIcons.Palette, s.theme)
                 ChoiceRow(
                     listOf(ThemeMode.SYSTEM to s.themeSystem, ThemeMode.LIGHT to s.themeLight, ThemeMode.DARK to s.themeDark),
                     settings.theme,
                 ) { v -> c.updateSettings { it.copy(theme = v) } }
             }
-            ClickableCard("🧠 " + s.myAi, s.myAiBody) { c.navigate(Screen.Models) }
-            ClickableCard("🔒 " + s.privacy, null) { showPrivacy = true }
             SectionCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text("🛠️ " + s.advancedMode, style = MaterialTheme.typography.titleMedium)
-                        Text(s.advancedModeBody, style = MaterialTheme.typography.bodyMedium)
-                    }
-                    Switch(checked = settings.advancedMode, onCheckedChange = { v -> c.updateSettings { it.copy(advancedMode = v) } })
-                }
+                ListRow(AppIcons.Chip, s.myAi, s.myAiBody, onClick = { c.navigate(Screen.Models) })
+                ListRow(AppIcons.Lock, s.privacy, onClick = { showPrivacy = true })
+            }
+            SectionCard {
+                ListRow(
+                    AppIcons.Tune,
+                    s.advancedMode,
+                    s.advancedModeBody,
+                    trailing = {
+                        Switch(checked = settings.advancedMode, onCheckedChange = { v -> c.updateSettings { it.copy(advancedMode = v) } })
+                    },
+                )
                 if (settings.advancedMode) {
-                    OutlinedButton(onClick = { c.navigate(Screen.Advanced) }, Modifier.fillMaxWidth().padding(top = 8.dp)) {
-                        Text(s.advancedSettings)
-                    }
+                    ListRow(AppIcons.Settings, s.advancedSettings, onClick = { c.navigate(Screen.Advanced) })
                 }
             }
             Text(
@@ -158,13 +173,15 @@ fun ModelsScreen(c: AppController) {
                 val dl = c.downloads[m.id]
                 SectionCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconTile(AppIcons.Sparkle)
+                        Spacer(Modifier.width(12.dp))
                         Text(s.tierName(m.tier), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                         when {
                             inUse -> Badge(s.inUse, highlight = true)
                             installed -> Badge(s.installed)
                         }
                     }
-                    Text(s.tierDescription(m.tier), style = MaterialTheme.typography.bodyMedium)
+                    Text(s.tierDescription(m.tier), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
                     if (settings.advancedMode) {
                         Text(
                             "${m.family}\n${m.parameters} · ${m.quantization} · ${m.fileName}\n${m.hfRepo}\n${m.license}",
@@ -173,7 +190,7 @@ fun ModelsScreen(c: AppController) {
                             modifier = Modifier.padding(top = 4.dp),
                         )
                     }
-                    if (device != null) Text(compatibilityLabel(Recommender.compatibility(m, device, installed)), Modifier.padding(top = 6.dp))
+                    if (device != null) CompatibilityLine(Recommender.compatibility(m, device, installed), Modifier.padding(top = 8.dp))
                     Text(s.downloadSize(formatBytes(m.approxSizeBytes)), style = MaterialTheme.typography.bodyMedium)
                     val st = dl?.state
                     if (!installed && st is DownloadState.Downloading) {
@@ -185,9 +202,9 @@ fun ModelsScreen(c: AppController) {
                     }
                     Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         when {
-                            installed && !inUse -> OutlinedButton(onClick = { c.useModel(m) }) { Text(s.useThisAi) }
+                            installed && !inUse -> OutlinedButton(onClick = { c.useModel(m) }, shape = MaterialTheme.shapes.medium) { Text(s.useThisAi) }
                             !installed && st is DownloadState.Downloading && dl?.paused != true ->
-                                OutlinedButton(onClick = { c.pauseDownload(m) }) { Text(s.pause) }
+                                OutlinedButton(onClick = { c.pauseDownload(m) }, shape = MaterialTheme.shapes.medium) { Text(s.pause) }
                             !installed -> {
                                 val usable = device == null || Recommender.compatibility(m, device).let {
                                     it == Compatibility.WORKS_WELL || it == Compatibility.MAY_BE_SLOW
@@ -195,6 +212,7 @@ fun ModelsScreen(c: AppController) {
                                 OutlinedButton(
                                     onClick = { c.startDownload(m, thenTest = false) },
                                     enabled = usable || settings.advancedMode,
+                                    shape = MaterialTheme.shapes.medium,
                                 ) { Text(if (dl?.paused == true) s.resume else s.download) }
                             }
                         }
@@ -297,14 +315,6 @@ fun AdvancedScreen(c: AppController) {
                 Text(s.advReset)
             }
         }
-    }
-}
-
-@Composable
-private fun ClickableCard(title: String, body: String?, onClick: () -> Unit) {
-    SectionCard(Modifier.clickable(onClick = onClick)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        if (body != null) Text(body, style = MaterialTheme.typography.bodyMedium)
     }
 }
 

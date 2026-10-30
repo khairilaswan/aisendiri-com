@@ -1,0 +1,8 @@
+{
+ "model": "ggml-org/LFM2-VL-450M-GGUF/LFM2-VL-450M-Q8_0.gguf",
+ "model_mb": 362,
+ "mmproj": "ggml-org/LFM2-VL-450M-GGUF/mmproj-LFM2-VL-450M-Q8_0.gguf",
+ "mmproj_mb": 99,
+ "text_model": "Sailor2-1B-Chat-Q4_K_M.gguf",
+ "template": "{{bos_token}}{% for message in messages %}{{'<|im_start|>' + message['role'] + '\n'}}{% if message['content'] is string %}{{ message['content'] }}{% else %}{% for content in message['content'] %}{% if  ... ontent'] }}{% else %}{% for content in message['content'] %}{% if content['type'] == 'image' %}{{ '<image>' }}{% elif content['type'] == 'text' %}{{ content['text'] }}{% endif %}{% endfor %}{% endif %}{{'<|im_end|>\n'}}{% endfor %}{% if add_generation_prompt %}{{'<|im_start|>assistant\n' }}{% endif %}"
+}

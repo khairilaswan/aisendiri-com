@@ -60,6 +60,7 @@ sealed interface Screen {
     data object Settings : Screen
     data object Models : Screen
     data object Advanced : Screen
+    data object Licenses : Screen
 }
 
 sealed interface EngineStatus {

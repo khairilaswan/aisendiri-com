@@ -30,6 +30,7 @@ fun App(controller: AppController) {
                     Screen.Settings -> SettingsScreen(controller)
                     Screen.Models -> ModelsScreen(controller)
                     Screen.Advanced -> AdvancedScreen(controller)
+                    Screen.Licenses -> LicensesScreen(controller)
                 }
             }
         }

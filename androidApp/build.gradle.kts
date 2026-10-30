@@ -12,8 +12,9 @@ android {
         applicationId = "com.aisendiri.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
-        versionName = "0.1.0"
+        // Play needs a higher versionCode for every upload: the release workflow passes its own counter.
+        versionCode = (System.getenv("AISENDIRI_VERSION_CODE") ?: System.getenv("GITHUB_RUN_NUMBER"))?.toIntOrNull() ?: 1
+        versionName = System.getenv("AISENDIRI_VERSION_NAME") ?: "0.1.0"
         ndk { abiFilters += listOf("arm64-v8a") }
     }
 
@@ -26,6 +27,17 @@ android {
             keyAlias = "androiddebugkey"
             keyPassword = "android"
         }
+        // The Play upload key. Khai keeps the keystore; CI gets it from GitHub secrets
+        // (see docs/RELEASE-ANDROID.md). Without it, release builds are left unsigned.
+        val uploadKeystore = System.getenv("AISENDIRI_UPLOAD_KEYSTORE")
+        if (uploadKeystore != null) {
+            create("release") {
+                storeFile = file(uploadKeystore)
+                storePassword = System.getenv("AISENDIRI_UPLOAD_STORE_PASSWORD")
+                keyAlias = System.getenv("AISENDIRI_UPLOAD_KEY_ALIAS")
+                keyPassword = System.getenv("AISENDIRI_UPLOAD_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -33,7 +45,12 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
+            // Readable native crash reports in Play Console.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
         }
     }
 

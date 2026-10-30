@@ -9,21 +9,20 @@ Status of the store rules that matter for an on-device AI app. ✅ done in this 
 - ✅ Chats stay on the device; no analytics or tracking SDKs. Cloud backup of app data is disabled.
 - ✅ Users can report AI replies (🚩 Report under each answer opens a pre-filled email).
 - ✅ "AI can make mistakes" notice in chat.
-- ⏳ Privacy policy page at aisendiri.com (the in-app Privacy text is the draft).
+- ✅ Privacy policy written in BM and English (`site/privacy/index.html`), linked from Settings → Privacy. ⏳ Host it at https://aisendiri.com/privacy.
 - ⏳ Set up the `report@aisendiri.com` mailbox used by the Report button.
-- ⏳ Model licences screen in the app: Sailor2 and Qwen2.5 (Apache 2.0), Gemma Terms of Use (Gemma 3, Gemma-SEA-LION), Llama 3.2 Community License ("Built with Llama"), Whisper and whisper.cpp (MIT).
-- ⏳ Age rating questionnaires; AI chat apps usually land at Teen / 12+.
+- ✅ Settings → Licences lists every AI and library with its licence, Gemma's Prohibited Use Policy and "Built with Llama".
+- ⏳ Age rating questionnaires; AI chat apps usually land at Teen / 12+ (answers in `docs/play-store/APP-CONTENT.md`).
 
 ## Google Play
 
-- ✅ Target SDK 35, 64-bit (arm64-v8a) native code.
+- ✅ Target SDK 36, 64-bit (arm64-v8a) native code, 16 KB page aligned (checked in the release workflow).
 - ✅ Permissions: INTERNET, ACCESS_NETWORK_STATE, and RECORD_AUDIO (asked only when the user first taps the mic in Talk).
 - ✅ Photos use the system photo picker and the phone's camera app, so the app declares no READ_MEDIA_IMAGES, storage or CAMERA permission (Play's photo and video permissions policy). The camera app saves into a private FileProvider path.
-- ⏳ Data safety: declare microphone audio as "processed on device, not collected" (it never leaves the phone and is never saved).
-- ⏳ Data safety: photos the user attaches are "processed on device, not collected". They are saved with the chat in app-private storage and deleted with it.
-- ⏳ Data safety form: "no data collected", "no data shared" (true for this build).
-- ⏳ Generative AI declaration in Play Console, plus a content-filtering note.
-- ⏳ Release signing key via Play App Signing (the committed `debug.keystore` is for test builds only).
+- ✅ Data safety answers ("no data collected") with the reasoning per data type: `docs/play-store/APP-CONTENT.md`.
+- ✅ Store listing text in BM and English: `docs/play-store/LISTING.md`.
+- ✅ Signed release bundle workflow with R8 shrinking; upload key held by Khai, Play App Signing on (`docs/RELEASE-ANDROID.md`). ⏳ Create the key and add the GitHub secrets.
+- ⏳ Closed test with 12 testers for 14 days (new personal developer accounts) before production.
 - ⏳ Large downloads: consider a foreground service (WorkManager) so a download continues with the app in the background.
 
 ## App Store (later)

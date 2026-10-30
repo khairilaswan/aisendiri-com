@@ -73,7 +73,7 @@ fun WelcomeScreen(c: AppController) {
         ) {
             FeatureRow(AppIcons.Chat, s.welcomeFeatureChat, null)
             FeatureRow(AppIcons.Mic, s.welcomeFeatureVoice, null)
-            FeatureRow(AppIcons.Camera, s.welcomeFeaturePhoto, s.comingSoon)
+            FeatureRow(AppIcons.Camera, s.welcomeFeaturePhoto, null)
             FeatureRow(AppIcons.Image, s.welcomeFeatureImage, s.comingSoon)
             Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(AppIcons.Lock, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 8.dp))

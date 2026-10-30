@@ -8,6 +8,7 @@ object LlamaNative {
     const val ERR_TOKENIZE = -1
     const val ERR_CONTEXT_FULL = -2
     const val ERR_DECODE = -3
+    const val ERR_IMAGE = -4
 
     @Volatile
     private var initialized = false
@@ -36,6 +37,34 @@ object LlamaNative {
     external fun startCompletion(
         handle: Long,
         prompt: ByteArray,
+        reserveTokens: Int,
+        temperature: Float,
+        topP: Float,
+        minP: Float,
+        repeatPenalty: Float,
+        seed: Int,
+    ): Int
+
+    /**
+     * Attaches an image encoder ("mmproj" file) to a loaded model so it can look at photos.
+     * [maxImageTokens] limits detail for models with flexible image sizes; 0 keeps the default.
+     */
+    external fun attachVision(handle: Long, mmprojPath: String, nThreads: Int, maxImageTokens: Int): Boolean
+
+    /** Placeholder to put in a message's text where its image goes. */
+    external fun mediaMarker(): String
+
+    /**
+     * Like [startCompletion] for a prompt with one [mediaMarker] per image. Images are RGB bytes,
+     * 3 per pixel, each with a stable id so an image already processed in an earlier turn is reused.
+     */
+    external fun startCompletionWithImages(
+        handle: Long,
+        prompt: ByteArray,
+        images: Array<ByteArray>,
+        widths: IntArray,
+        heights: IntArray,
+        ids: Array<String>,
         reserveTokens: Int,
         temperature: Float,
         topP: Float,

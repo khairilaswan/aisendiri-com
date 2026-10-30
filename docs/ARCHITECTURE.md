@@ -31,6 +31,9 @@ settings model and all text live in `shared/src/commonMain`. Platform work sits 
   to the whole conversation and reuses the matching prefix of the KV cache, so only new text is processed.
   If the chat outgrows the context window, the oldest messages are dropped.
 - Text crosses JNI as UTF-8 bytes; incomplete multi-byte characters are held back until complete.
+- Gemma 4 based AIs (SEA-LION v4.5 E2B) have no built-in llama.cpp template, so `aisendiri_llama.cpp` writes their
+  turn format itself, with an empty thought block. SEA-LION E2B often writes English notes before its answer anyway,
+  ending them with `<channel|>`; `ThoughtFilter` holds the reply back and drops the notes.
 
 ## Choosing an AI
 
@@ -61,3 +64,15 @@ Model files are weights (data), not executable code.
   voices only. Falls back to an Indonesian voice for Malay, otherwise shows text and a button to install a
   voice. Replies are spoken sentence by sentence while they stream, and the AI is asked for short spoken answers.
 - A voice conversation is saved like a normal chat, so it shows in history.
+
+## Photos
+
+- Picking: Android's Photo Picker (`PickVisualMedia`) and the phone's camera app (`TakePicture` into a
+  `FileProvider` cache file). Neither needs a storage or camera permission. The app keeps a copy in
+  `files/photos`: rotated upright from EXIF, longest side 1280 px, JPEG. It is deleted with its chat.
+- Reading: llama.cpp's `mtmd` library (built from the same submodule, video off). An image encoder ("mmproj") is
+  attached to the loaded session. The prompt holds a media marker per photo; `mtmd_tokenize` splits it into text
+  and image chunks, which are evaluated in order. In the KV cache each image is remembered by a hash of its id, so
+  follow-up questions don't re-encode it. "Photo detail" caps the image tokens.
+- Add-ons (`VisionCatalog`): Smart AI uses its own encoder. Light AIs can't see, so their add-on also downloads a
+  photo AI (Qwen3-VL 2B); chats with a photo switch to it. See `docs/VISION-MODEL-CHECK.md`.

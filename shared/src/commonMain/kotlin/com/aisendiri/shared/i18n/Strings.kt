@@ -2,6 +2,7 @@ package com.aisendiri.shared.i18n
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.aisendiri.shared.model.ModelTier
+import com.aisendiri.shared.settings.PhotoDetail
 import com.aisendiri.shared.voice.SpeakerState
 import com.aisendiri.shared.voice.SpeechLanguage
 import com.aisendiri.shared.voice.SpeechTier
@@ -216,6 +217,25 @@ class Strings(
     val fasterVoiceTip: String,
     val useFasterVoice: (String) -> String,
     val speechTimeLabel: (Long) -> String,
+    // Photos
+    val attachPhoto: String,
+    val photoFromCamera: String,
+    val photoFromGallery: String,
+    val removePhoto: String,
+    val photoDefaultQuestion: String,
+    val photoPlaceholder: String,
+    val photoLooking: String,
+    val photoNotSeen: String,
+    val photoSetupTitle: String,
+    val photoSetupBody: String,
+    val photoAddonName: String,
+    val photoDownload: (String) -> String,
+    val photoUnsupportedTitle: String,
+    val photoUnsupportedBody: String,
+    val photoUseSmart: String,
+    val advPhotoDetail: String,
+    val advPhotoDetailHelp: String,
+    val photoDetailLabel: (PhotoDetail) -> String,
 )
 
 val LocalStrings = staticCompositionLocalOf { EnglishStrings }
@@ -465,6 +485,30 @@ val EnglishStrings = Strings(
     fasterVoiceTip = "Voice recognition is slow on this phone. The Fast voice file understands you in a few seconds instead.",
     useFasterVoice = { "Use Fast voice ($it)" },
     speechTimeLabel = { "Voice recognition took ${formatGb(it / 1000.0)} s" },
+    attachPhoto = "Add a photo",
+    photoFromCamera = "Take a photo",
+    photoFromGallery = "Choose a photo",
+    removePhoto = "Remove photo",
+    photoDefaultQuestion = "What is in this picture?",
+    photoPlaceholder = "Ask about this photo…",
+    photoLooking = "Looking at the photo…",
+    photoNotSeen = "This AI can't see photos, so it only read your words.",
+    photoSetupTitle = "Let your AI see photos",
+    photoSetupBody = "Download the photo add-on once. Your photos are read on this phone and never uploaded.",
+    photoAddonName = "Photo add-on",
+    photoDownload = { "Download ($it)" },
+    photoUnsupportedTitle = "Your AI can't see photos yet",
+    photoUnsupportedBody = "Choose AI Ringan or AI Pintar in Models to ask about photos.",
+    photoUseSmart = "See AI options",
+    advPhotoDetail = "Photo detail",
+    advPhotoDetailHelp = "More detail reads small text better, but the AI takes longer to look at the photo.",
+    photoDetailLabel = {
+        when (it) {
+            PhotoDetail.FAST -> "Fast"
+            PhotoDetail.NORMAL -> "Normal"
+            PhotoDetail.DETAILED -> "Detailed"
+        }
+    },
 )
 
 val MalayStrings = Strings(
@@ -707,4 +751,28 @@ val MalayStrings = Strings(
     fasterVoiceTip = "Pengecaman suara agak perlahan pada telefon ini. Fail Suara Pantas boleh memahami anda dalam beberapa saat sahaja.",
     useFasterVoice = { "Guna Suara Pantas ($it)" },
     speechTimeLabel = { "Pengecaman suara mengambil masa ${formatGb(it / 1000.0)} saat" },
+    attachPhoto = "Tambah gambar",
+    photoFromCamera = "Ambil gambar",
+    photoFromGallery = "Pilih gambar",
+    removePhoto = "Buang gambar",
+    photoDefaultQuestion = "Apa yang ada dalam gambar ini?",
+    photoPlaceholder = "Tanya tentang gambar ini…",
+    photoLooking = "Sedang melihat gambar…",
+    photoNotSeen = "AI ini tidak dapat melihat gambar, jadi ia hanya membaca tulisan anda.",
+    photoSetupTitle = "Biar AI anda faham gambar",
+    photoSetupBody = "Muat turun tambahan gambar sekali sahaja. Gambar anda dibaca dalam telefon ini dan tidak dimuat naik.",
+    photoAddonName = "Tambahan gambar",
+    photoDownload = { "Muat turun ($it)" },
+    photoUnsupportedTitle = "AI anda belum boleh melihat gambar",
+    photoUnsupportedBody = "Pilih AI Ringan atau AI Pintar dalam Model untuk bertanya tentang gambar.",
+    photoUseSmart = "Lihat pilihan AI",
+    advPhotoDetail = "Perincian gambar",
+    advPhotoDetailHelp = "Lebih terperinci membaca tulisan kecil dengan lebih baik, tetapi AI mengambil masa lebih lama untuk melihat gambar.",
+    photoDetailLabel = {
+        when (it) {
+            PhotoDetail.FAST -> "Pantas"
+            PhotoDetail.NORMAL -> "Biasa"
+            PhotoDetail.DETAILED -> "Terperinci"
+        }
+    },
 )

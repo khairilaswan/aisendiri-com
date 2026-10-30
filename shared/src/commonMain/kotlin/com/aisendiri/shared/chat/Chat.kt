@@ -10,6 +10,8 @@ data class ChatMessage(
     val text: String,
     /** True once the user reported this AI reply as harmful or wrong. */
     val reported: Boolean = false,
+    /** Id of a photo the user attached to this message (see PhotoStore). */
+    val photo: String? = null,
 )
 
 @Serializable

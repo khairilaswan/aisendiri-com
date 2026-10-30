@@ -1,0 +1,8 @@
+{
+ "model": "aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF/Gemma-SEA-LION-v4.5-E2B-IT-Q4_K_M.gguf",
+ "model_mb": 3269,
+ "mmproj": "ggml-org/gemma-4-E2B-it-GGUF/mmproj-gemma-4-E2B-it-Q8_0.gguf",
+ "mmproj_mb": 532,
+ "text_model": null,
+ "template": "{%- macro format_parameters(properties, required, filter_keys=false) -%}\n    {%- set standard_keys = ['description', 'type', 'properties', 'required', 'nullable'] -%}\n    {%- set ns = namespace(found_ ... ot has_content) -%}\n            {{- '<turn|>\\n' -}}\n        {%- endif -%}\n    {%- endif -%}\n{%- endfor -%}\n\n{%- if add_generation_prompt -%}\n    {%- if ns.prev_message_type != 'tool_response' and ns.prev_message_type != 'tool_call' -%}\n        {{- '<|turn>model\\n' -}}\n    {%- endif -%}\n{%- endif -%}"
+}

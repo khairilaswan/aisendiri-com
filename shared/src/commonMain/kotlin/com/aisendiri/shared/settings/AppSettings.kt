@@ -7,6 +7,12 @@ import kotlinx.serialization.Serializable
 enum class AppLanguage { SYSTEM, ENGLISH, MALAY }
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+/**
+ * How closely the AI looks at a photo. More detail reads small text better but takes longer.
+ * [maxImageTokens] caps the image tokens of AIs that read photos at flexible sizes.
+ */
+enum class PhotoDetail(val maxImageTokens: Int) { FAST(140), NORMAL(280), DETAILED(560) }
+
 /** Null engine values mean "automatic": the app picks them from the phone's hardware. */
 @Serializable
 data class AppSettings(
@@ -31,6 +37,8 @@ data class AppSettings(
     val fastListening: Boolean = true,
     /** Starts listening again after the AI finishes speaking. */
     val handsFree: Boolean = false,
+    // Photos
+    val photoDetail: PhotoDetail = PhotoDetail.NORMAL,
 ) {
     /** Puts every Advanced value back to its default, keeping the user's other choices. */
     fun withAdvancedDefaults(): AppSettings = copy(
@@ -46,6 +54,7 @@ data class AppSettings(
         speechRate = DEFAULT_SPEECH_RATE,
         fastListening = true,
         handsFree = false,
+        photoDetail = PhotoDetail.NORMAL,
     )
 
     companion object {

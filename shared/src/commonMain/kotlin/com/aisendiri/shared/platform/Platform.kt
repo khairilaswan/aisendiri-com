@@ -1,11 +1,13 @@
 package com.aisendiri.shared.platform
 
+import androidx.compose.ui.graphics.ImageBitmap
 import com.aisendiri.shared.chat.ChatMessage
 import com.aisendiri.shared.chat.ConversationStore
 import com.aisendiri.shared.device.DeviceProfile
 import com.aisendiri.shared.device.EngineConfig
 import com.aisendiri.shared.model.AiModel
 import com.aisendiri.shared.model.ModelFile
+import com.aisendiri.shared.model.VisionAddon
 import com.aisendiri.shared.settings.SettingsStore
 import com.aisendiri.shared.voice.VoiceServices
 import kotlinx.coroutines.flow.Flow
@@ -65,14 +67,37 @@ sealed interface GenerationEvent {
 interface ChatEngine {
     /** Id of the model currently in memory, or null. */
     val loadedModelId: StateFlow<String?>
+    /** Id of the photo add-on attached to the loaded model, or null when it can't see photos. */
+    val visionId: StateFlow<String?>
 
     suspend fun load(model: AiModel, path: String, config: EngineConfig): Result<Unit>
     suspend fun unload()
 
-    /** Streams a reply. Older messages are dropped automatically if the chat gets too long. */
+    /** Lets the loaded model see photos. [maxImageTokens] 0 keeps the add-on's own detail level. */
+    suspend fun attachVision(addon: VisionAddon, path: String, maxImageTokens: Int): Result<Unit>
+
+    /**
+     * Streams a reply. Older messages are dropped automatically if the chat gets too long.
+     * Photos in [messages] are only sent to the model when a photo add-on is attached.
+     */
     fun generate(messages: List<ChatMessage>, params: GenerationParams): Flow<GenerationEvent>
 
     suspend fun diagnostics(): String
+}
+
+/** A photo as the image AI reads it: RGB bytes, 3 per pixel. */
+class Photo(val id: String, val width: Int, val height: Int, val rgb: ByteArray)
+
+/** Photos attached to chats, kept in the app's private storage. */
+interface PhotoStore {
+    /** Opens the system photo picker (no storage permission needed). Returns the saved photo's id. */
+    suspend fun pick(): String?
+    /** Opens the phone's camera app (no camera permission needed). Returns the saved photo's id. */
+    suspend fun takePhoto(): String?
+    suspend fun thumbnail(id: String): ImageBitmap?
+    suspend fun rgb(id: String): Photo?
+    suspend fun delete(ids: Collection<String>)
+    suspend fun deleteAll()
 }
 
 interface PlatformActions {
@@ -94,4 +119,5 @@ class AppServices(
     val conversations: ConversationStore,
     val platform: PlatformActions,
     val voice: VoiceServices,
+    val photos: PhotoStore,
 )

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The camera app saves a new photo here; the app copies it into private storage and deletes it. -->
+<paths>
+    <cache-path name="camera" path="camera/" />
+</paths>

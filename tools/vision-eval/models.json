@@ -1,0 +1,36 @@
+{
+ "sealion-v4.5-e2b-280": {
+  "repos": [
+   "aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf"
+  ],
+  "mmproj_repos": [
+   "aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF"
+  ],
+  "max_image_tokens": 280,
+  "note": "Round 2: the app's Smart AI with its own image encoder, thinking off, at the app's Normal photo detail."
+ },
+ "sealion-v4.5-e2b-mmq8-280": {
+  "same_as": "sealion-v4.5-e2b-280",
+  "mmproj_repos": [
+   "ggml-org/gemma-4-E2B-it-GGUF"
+  ],
+  "note": "Round 2: Smart AI with Gemma 4 E2B's smaller Q8_0 image encoder (557 MB instead of 940 MB)."
+ },
+ "qwen3-vl-2b-q4-280": {
+  "repos": [
+   "unsloth/Qwen3-VL-2B-Instruct-GGUF",
+   "Qwen/Qwen3-VL-2B-Instruct-GGUF"
+  ],
+  "file": [
+   "*Q4_K_M.gguf"
+  ],
+  "mmproj_repos": [
+   "ggml-org/Qwen3-VL-2B-Instruct-GGUF"
+  ],
+  "max_image_tokens": 280,
+  "note": "Round 2: the Light phones' photo AI candidate at Q4_K_M (round 1 used Q8_0), at the app's Normal photo detail."
+ }
+}

@@ -25,6 +25,9 @@ android {
                 arguments += "-DLLAMA_BUILD_EXAMPLES=OFF"
                 arguments += "-DLLAMA_BUILD_SERVER=OFF"
                 arguments += "-DLLAMA_BUILD_APP=OFF"
+                // Photos: libmtmd (image encoders) without the rest of llama.cpp's tools.
+                arguments += "-DLLAMA_BUILD_MTMD=ON"
+                arguments += "-DMTMD_VIDEO=OFF"
                 arguments += "-DLLAMA_OPENSSL=OFF"
                 arguments += "-DGGML_NATIVE=OFF"
                 arguments += "-DGGML_BACKEND_DL=ON"

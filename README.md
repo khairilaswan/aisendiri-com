@@ -5,7 +5,7 @@ Your own personal AI, right on your phone. Private, simple, and always ready.
 AI Sendiri runs a small AI model **on the phone itself** with [llama.cpp](https://github.com/ggml-org/llama.cpp).
 After a one-time download it works offline, needs no account, and chats never leave the phone.
 
-**Status:** Phase 1 + text chat MVP (Android). Voice, photo understanding and image creation are shown as "Coming soon".
+**Status:** text chat, voice (Talk) and photo understanding (Android). Image creation is shown as "Coming soon".
 
 ## What's in this build
 
@@ -13,6 +13,7 @@ After a one-time download it works offline, needs no account, and chats never le
 - Automatic phone check (RAM, free space, CPU cores and features, chipset, thermal, battery, Wi-Fi). Hardware only, never personal data.
 - AI catalog with friendly names, picked for Bahasa Melayu and Manglish (see [docs/MALAY-MODEL-CHECK.md](docs/MALAY-MODEL-CHECK.md)): **Light** (Sailor2 1B) and **Smart** (Gemma-SEA-LION v4.5 E2B, 8 GB phones). Qwen2.5, Gemma 3 1B and Llama 3.2 1B stay in Advanced mode.
 - Download with progress, pause/resume, storage check, Wi-Fi tip, and size + SHA-256 + GGUF header verification.
+- Ask about a photo or screenshot (camera or gallery, no extra permissions), offline. Smart reads photos itself; Light phones download Qwen3-VL 2B as a photo add-on (see [docs/VISION-MODEL-CHECK.md](docs/VISION-MODEL-CHECK.md)).
 - Offline streaming chat with stop button, quick actions, copy, report (Play's AI-content rule), chat history.
 - English and Bahasa Melayu.
 - Advanced mode (Settings → Advanced mode): temperature, top-p, min-p, repeat penalty, reply length, context size, threads, system prompt, model details, device and engine diagnostics, speed.

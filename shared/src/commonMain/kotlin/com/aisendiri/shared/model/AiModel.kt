@@ -41,8 +41,40 @@ data class AiModel(
     override val magic: String get() = "GGUF"
 }
 
+/**
+ * Beginners see one Light and one Smart AI, picked by a Bahasa Melayu, Manglish and code-switching
+ * check (tools/malay-eval). The earlier picks stay in Advanced mode so downloaded copies keep working.
+ */
 object ModelCatalog {
     val all: List<AiModel> = listOf(
+        AiModel(
+            id = "sailor2-1b-q4km",
+            tier = ModelTier.FAST,
+            family = "Sailor2 1B Chat",
+            parameters = "1B",
+            quantization = "Q4_K_M",
+            hfRepo = "bartowski/Sailor2-1B-Chat-GGUF",
+            fileName = "Sailor2-1B-Chat-Q4_K_M.gguf",
+            approxSizeMb = 704,
+            minRamGb = 2.8,
+            recommendedRamGb = 3.3,
+            license = "Apache 2.0",
+            licenseUrl = "https://huggingface.co/sail/Sailor2-1B-Chat",
+        ),
+        AiModel(
+            id = "sealion-v4.5-e2b-q4km",
+            tier = ModelTier.SMART,
+            family = "Gemma-SEA-LION v4.5 E2B IT",
+            parameters = "E2B (5B, 2B active)",
+            quantization = "Q4_K_M",
+            hfRepo = "aisingapore/Gemma-SEA-LION-v4.5-E2B-IT-GGUF",
+            fileName = "Gemma-SEA-LION-v4.5-E2B-IT-Q4_K_M.gguf",
+            approxSizeMb = 3269,
+            minRamGb = 5.4,
+            recommendedRamGb = 7.0,
+            license = "Gemma Terms of Use",
+            licenseUrl = "https://ai.google.dev/gemma/terms",
+        ),
         AiModel(
             id = "qwen2.5-0.5b-q4km",
             tier = ModelTier.FAST,
@@ -56,6 +88,7 @@ object ModelCatalog {
             recommendedRamGb = 3.0,
             license = "Apache 2.0",
             licenseUrl = "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct/blob/main/LICENSE",
+            advancedOnly = true,
         ),
         AiModel(
             id = "gemma3-1b-q4km",
@@ -70,6 +103,7 @@ object ModelCatalog {
             recommendedRamGb = 5.0,
             license = "Gemma Terms of Use",
             licenseUrl = "https://ai.google.dev/gemma/terms",
+            advancedOnly = true,
         ),
         AiModel(
             id = "qwen2.5-1.5b-q4km",
@@ -84,6 +118,7 @@ object ModelCatalog {
             recommendedRamGb = 6.5,
             license = "Apache 2.0",
             licenseUrl = "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct/blob/main/LICENSE",
+            advancedOnly = true,
         ),
         AiModel(
             id = "llama3.2-1b-q4km",

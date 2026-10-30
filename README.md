@@ -11,7 +11,7 @@ After a one-time download it works offline, needs no account, and chats never le
 
 - Beginner-first flow: welcome → phone check → recommended AI → download → first-run test → home.
 - Automatic phone check (RAM, free space, CPU cores and features, chipset, thermal, battery, Wi-Fi). Hardware only, never personal data.
-- AI catalog with friendly names: **Light** (Qwen2.5 0.5B), **Balanced** (Gemma 3 1B), **Smart** (Qwen2.5 1.5B); Llama 3.2 1B in Advanced mode.
+- AI catalog with friendly names, picked for Bahasa Melayu and Manglish (see [docs/MALAY-MODEL-CHECK.md](docs/MALAY-MODEL-CHECK.md)): **Light** (Sailor2 1B) and **Smart** (Gemma-SEA-LION v4.5 E2B, 8 GB phones). Qwen2.5, Gemma 3 1B and Llama 3.2 1B stay in Advanced mode.
 - Download with progress, pause/resume, storage check, Wi-Fi tip, and size + SHA-256 + GGUF header verification.
 - Offline streaming chat with stop button, quick actions, copy, report (Play's AI-content rule), chat history.
 - English and Bahasa Melayu.

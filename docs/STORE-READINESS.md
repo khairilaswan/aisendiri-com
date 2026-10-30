@@ -11,7 +11,7 @@ Status of the store rules that matter for an on-device AI app. ✅ done in this 
 - ✅ "AI can make mistakes" notice in chat.
 - ⏳ Privacy policy page at aisendiri.com (the in-app Privacy text is the draft).
 - ⏳ Set up the `report@aisendiri.com` mailbox used by the Report button.
-- ⏳ Model licences screen in the app: Qwen2.5 (Apache 2.0), Gemma Terms of Use, Llama 3.2 Community License ("Built with Llama"), Whisper and whisper.cpp (MIT).
+- ⏳ Model licences screen in the app: Sailor2 and Qwen2.5 (Apache 2.0), Gemma Terms of Use (Gemma 3, Gemma-SEA-LION), Llama 3.2 Community License ("Built with Llama"), Whisper and whisper.cpp (MIT).
 - ⏳ Age rating questionnaires; AI chat apps usually land at Teen / 12+.
 
 ## Google Play

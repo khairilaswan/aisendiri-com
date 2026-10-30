@@ -16,18 +16,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  list:
+    runs-on: ubuntu-latest
+    outputs:
+      models: ${{ steps.models.outputs.models }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: models
+        run: echo "models=$(jq -c keys_unsorted tools/malay-eval/models.json)" >> "$GITHUB_OUTPUT"
+
   model:
+    needs: list
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
-        model: [qwen2.5-0.5b, qwen3-0.6b, gemma3-1b, llama3.2-1b, sailor2-1b, malaysian-qwen2.5-0.5b,
-                qwen2.5-1.5b, qwen3-1.7b, malaysian-qwen2.5-1.5b, gemma3n-e2b, gemma3-4b, qwen3-4b-2507]
+        model: ${{ fromJSON(needs.list.outputs.models) }}
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: true
+
+      # Converting a 3B model needs more room than a runner has free by default.
+      - name: Free disk space
+        run: sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup
 
       - uses: actions/setup-python@v5
         with:
@@ -84,5 +97,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
           git add tools/malay-eval/results
+          for f in tools/malay-eval/results/*.jsonl; do echo "#### $f"; cat "$f"; done
           git commit -m "Malay model check: replies from run ${{ github.run_number }}" || exit 0
-          git push
+          for i in 1 2 3 4; do git push && exit 0; sleep $((i * 10)); done
+          exit 1

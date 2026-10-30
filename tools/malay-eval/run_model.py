@@ -2,6 +2,7 @@
 then runs the prompt set through malay-eval. Used by .github/workflows/malay-eval.yml."""
 import fnmatch
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -35,11 +36,14 @@ def convert():
     print(f"converting {src}")
     hf_dir = Path(snapshot_download(src, local_dir=work / "hf",
                                     allow_patterns=["*.json", "*.safetensors", "*.model", "*.txt", "*.jinja"]))
-    f16 = work / "model-f16.gguf"
-    subprocess.run([sys.executable, f"{llama_src}/convert_hf_to_gguf.py", str(hf_dir), "--outtype", "f16",
-                    "--outfile", str(f16)], check=True)
+    # Q8_0 instead of F16 halves the disk needed; runners only have about 14 GB free.
+    q8 = work / "model-Q8_0.gguf"
+    subprocess.run([sys.executable, f"{llama_src}/convert_hf_to_gguf.py", str(hf_dir), "--outtype", "q8_0",
+                    "--outfile", str(q8)], check=True)
+    shutil.rmtree(hf_dir)
     q4 = work / "model-Q4_K_M.gguf"
-    subprocess.run([quantize_bin, str(f16), str(q4), "Q4_K_M"], check=True)
+    subprocess.run([quantize_bin, "--allow-requantize", str(q8), str(q4), "Q4_K_M"], check=True)
+    q8.unlink()
     return q4
 
 

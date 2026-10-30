@@ -16,19 +16,20 @@ class RecommenderTest {
     @Test
     fun fourGbPhoneGetsTheLightAi() {
         // A "4 GB" Galaxy A51 / A15 reports about 3.6 GiB.
-        assertEquals("qwen2.5-0.5b-q4km", Recommender.recommend(phone(3.6)).model?.id)
+        assertEquals("sailor2-1b-q4km", Recommender.recommend(phone(3.6)).model?.id)
         assertEquals(4, phone(3.6).marketedRamGb)
     }
 
     @Test
-    fun sixGbPhoneGetsTheBalancedAi() {
-        assertEquals("gemma3-1b-q4km", Recommender.recommend(phone(5.5)).model?.id)
+    fun sixGbPhoneStaysOnTheLightAi() {
+        // The Smart AI would fit, but it is slow and tight on memory below 8 GB.
+        assertEquals("sailor2-1b-q4km", Recommender.recommend(phone(5.5)).model?.id)
         assertEquals(6, phone(5.5).marketedRamGb)
     }
 
     @Test
     fun eightGbPhoneGetsTheSmartAi() {
-        assertEquals("qwen2.5-1.5b-q4km", Recommender.recommend(phone(7.4)).model?.id)
+        assertEquals("sealion-v4.5-e2b-q4km", Recommender.recommend(phone(7.4)).model?.id)
         assertEquals(8, phone(7.4).marketedRamGb)
     }
 
@@ -42,12 +43,12 @@ class RecommenderTest {
     @Test
     fun fallsBackToSmallerAi() {
         val smart = Recommender.recommend(phone(7.4)).model!!
-        assertEquals("gemma3-1b-q4km", Recommender.smallerThan(smart, phone(7.4))?.id)
+        assertEquals("sailor2-1b-q4km", Recommender.smallerThan(smart, phone(7.4))?.id)
     }
 
     @Test
     fun lowStorageFallsBackToLighterAi() {
-        // 1.6 GB free: too little for the 0.8 GB AI plus 1 GB headroom, but fine for the 0.4 GB one.
-        assertEquals("qwen2.5-0.5b-q4km", Recommender.recommend(phone(7.4, freeGb = 1.6)).model?.id)
+        // 2 GB free: too little for the 3.2 GB AI plus 1 GB headroom, but fine for the 0.7 GB one.
+        assertEquals("sailor2-1b-q4km", Recommender.recommend(phone(7.4, freeGb = 2.0)).model?.id)
     }
 }

@@ -1,0 +1,28 @@
+{
+  "system": "Anda ialah AI Sendiri, pembantu yang mesra dan suka membantu, yang berjalan secara peribadi dalam telefon pengguna. Beri jawapan yang jelas dan ringkas. Balas dalam bahasa yang digunakan oleh pengguna. Jika tidak pasti, beritahu dengan jujur.",
+  "voice_style": "Ini ialah perbualan secara lisan. Jawab dengan ringkas dalam dua atau tiga ayat pendek, dalam gaya percakapan yang biasa, tanpa senarai, tajuk atau simbol.",
+  "prompts": [
+    {"id": "bm-kwsp", "kind": "BM formal", "messages": [{"role": "user", "content": "Terangkan secara ringkas apakah perbezaan antara KWSP dan PERKESO."}]},
+    {"id": "bm-surat-cuti", "kind": "BM formal", "messages": [{"role": "user", "content": "Tolong tulis mesej ringkas kepada bos saya untuk minta cuti sakit. Nama saya Aina dan saya demam sejak semalam."}]},
+    {"id": "bm-nasi-lemak", "kind": "BM santai", "messages": [{"role": "user", "content": "Aku nak masak nasi lemak untuk 4 orang. Apa bahan yang aku kena beli?"}]},
+    {"id": "bm-kereta-pejabat", "kind": "BM vs Indonesia", "messages": [{"role": "user", "content": "Buat dua ayat pendek dalam Bahasa Melayu Malaysia: satu guna perkataan 'kereta' dan satu guna perkataan 'pejabat'."}]},
+    {"id": "bm-singkatan", "kind": "BM SMS slang", "messages": [{"role": "user", "content": "x pe la, aku dh mkn td. ko nk g mne ptg ni?"}]},
+    {"id": "bm-kira-baki", "kind": "BM reasoning", "messages": [{"role": "user", "content": "Ali ada RM50. Dia beli 3 bungkus nasi lemak, setiap satu RM4.50. Berapa baki duit Ali?"}]},
+    {"id": "bm-pm-pertama", "kind": "BM fakta", "messages": [{"role": "user", "content": "Siapakah Perdana Menteri pertama Malaysia?"}]},
+    {"id": "bm-ibu-negeri-sabah", "kind": "BM fakta", "messages": [{"role": "user", "content": "Apakah ibu negeri Sabah?"}]},
+    {"id": "bm-raya-2027", "kind": "BM kejujuran", "messages": [{"role": "user", "content": "Hari Raya Aidilfitri tahun 2027 jatuh pada tarikh berapa?"}]},
+    {"id": "bm-ingat-nama", "kind": "BM multi-turn", "messages": [
+      {"role": "user", "content": "Hai, nama saya Khai. Saya tinggal di Shah Alam."},
+      {"role": "assistant", "content": "Hai Khai! Selamat berkenalan. Ada apa-apa yang boleh saya bantu hari ini?"},
+      {"role": "user", "content": "Siapa nama saya dan saya tinggal di mana?"}]},
+    {"id": "manglish-bateri", "kind": "Manglish", "messages": [{"role": "user", "content": "Bro, my phone battery cepat habis la, what should I do ah?"}]},
+    {"id": "manglish-inflasi", "kind": "Manglish", "messages": [{"role": "user", "content": "Eh can explain what is inflation or not? Simple simple one, like for makcik at the pasar."}]},
+    {"id": "manglish-jem", "kind": "Manglish", "messages": [{"role": "user", "content": "Wah lau, jam today teruk gila sia. Got any tips so I won't be so stressed while driving?"}]},
+    {"id": "mix-bisnes-kuih", "kind": "Code-switching", "messages": [{"role": "user", "content": "Saya nak start small business jual kuih online. Macam mana nak dapat first customer?"}]},
+    {"id": "mix-translate-en", "kind": "Code-switching", "messages": [{"role": "user", "content": "Boleh tak you translate ayat ni ke English: 'Mak cik tu dah lama tunggu bas kat depan kedai mamak.'"}]},
+    {"id": "en-translate-bm", "kind": "Translation", "messages": [{"role": "user", "content": "Translate to Bahasa Melayu: 'Please remember to switch off the lights before you leave the office.'"}]},
+    {"id": "voice-panas", "kind": "Voice BM", "voice": true, "messages": [{"role": "user", "content": "Cuaca panas sangat hari ni. Macam mana nak jaga badan supaya tak dehydrate?"}]},
+    {"id": "voice-manglish", "kind": "Voice Manglish", "voice": true, "messages": [{"role": "user", "content": "Eh what should I cook for dinner tonight ah, something cepat and senang?"}]},
+    {"id": "en-groceries", "kind": "English", "messages": [{"role": "user", "content": "Give me three tips to save money on groceries."}]}
+  ]
+}

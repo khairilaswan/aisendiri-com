@@ -4,6 +4,7 @@ import android.content.Context
 import com.aisendiri.llama.LlamaNative
 import com.aisendiri.shared.chat.ChatMessage
 import com.aisendiri.shared.chat.Role
+import com.aisendiri.shared.chat.StopFilter
 import com.aisendiri.shared.device.EngineConfig
 import com.aisendiri.shared.model.AiModel
 import com.aisendiri.shared.platform.ChatEngine
@@ -96,6 +97,7 @@ class LlamaChatEngine(private val context: Context) : ChatEngine {
         val start = System.nanoTime()
         var generated = 0
         var finish = FinishReason.DONE
+        val stops = StopFilter()
         while (true) {
             currentCoroutineContext().ensureActive() // Stop button cancels here
             if (generated >= params.maxTokens) {
@@ -104,8 +106,11 @@ class LlamaChatEngine(private val context: Context) : ChatEngine {
             }
             val bytes = LlamaNative.nextToken(h) ?: break
             generated++
-            if (bytes.isNotEmpty()) emit(GenerationEvent.Text(String(bytes, Charsets.UTF_8)))
+            val text = stops.add(String(bytes, Charsets.UTF_8))
+            if (text.isNotEmpty()) emit(GenerationEvent.Text(text))
+            if (stops.stopped) break
         }
+        stops.flush().takeIf { it.isNotEmpty() }?.let { emit(GenerationEvent.Text(it)) }
         if (trimmed && finish == FinishReason.DONE) finish = FinishReason.CONTEXT_FULL
         val seconds = (System.nanoTime() - start) / 1e9
         emit(GenerationEvent.Done(GenerationStats(promptTokens, generated, if (seconds > 0) generated / seconds else 0.0, finish)))

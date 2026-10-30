@@ -43,10 +43,14 @@ import com.aisendiri.shared.device.Recommender
 import com.aisendiri.shared.i18n.LocalStrings
 import com.aisendiri.shared.model.AiModel
 import com.aisendiri.shared.model.ModelCatalog
+import com.aisendiri.shared.model.ModelFile
 import com.aisendiri.shared.platform.DownloadState
 import com.aisendiri.shared.settings.AppLanguage
 import com.aisendiri.shared.settings.AppSettings
 import com.aisendiri.shared.settings.ThemeMode
+import com.aisendiri.shared.voice.SpeechCatalog
+import com.aisendiri.shared.voice.SpeechLanguage
+import com.aisendiri.shared.voice.SpeechModel
 import kotlin.math.round
 
 @Composable
@@ -103,6 +107,8 @@ fun SettingsScreen(c: AppController) {
     val s = LocalStrings.current
     val settings by c.settings.collectAsState()
     var showPrivacy by remember { mutableStateOf(false) }
+    val speaker by c.speakerState.collectAsState()
+    LaunchedEffect(settings.language, settings.speechLanguage) { c.prepareVoice() }
     AppScaffold(title = s.settings, onBack = { c.back() }) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -119,6 +125,17 @@ fun SettingsScreen(c: AppController) {
                     listOf(ThemeMode.SYSTEM to s.themeSystem, ThemeMode.LIGHT to s.themeLight, ThemeMode.DARK to s.themeDark),
                     settings.theme,
                 ) { v -> c.updateSettings { it.copy(theme = v) } }
+            }
+            SectionCard {
+                ListRow(
+                    AppIcons.Mic,
+                    s.speakReplies,
+                    s.speakRepliesBody,
+                    trailing = {
+                        Switch(checked = settings.speakReplies, onCheckedChange = { v -> c.updateSettings { it.copy(speakReplies = v) } })
+                    },
+                )
+                ListRow(AppIcons.Volume, s.voiceOutput, s.voiceStatus(speaker), onClick = { c.services.voice.speaker.openVoiceSettings() })
             }
             SectionCard {
                 ListRow(AppIcons.Chip, s.myAi, s.myAiBody, onClick = { c.navigate(Screen.Models) })
@@ -159,7 +176,7 @@ fun ModelsScreen(c: AppController) {
     val s = LocalStrings.current
     val settings by c.settings.collectAsState()
     val device = c.device
-    var confirmDelete by remember { mutableStateOf<AiModel?>(null) }
+    var confirmDelete by remember { mutableStateOf<ModelFile?>(null) }
     AppScaffold(title = s.myAi, onBack = { c.back() }) { padding ->
         Column(
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -216,6 +233,11 @@ fun ModelsScreen(c: AppController) {
                     }
                 }
             }
+            Text(s.speechModelTitle, style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp))
+            val recommendedSpeech = SpeechCatalog.recommend(device)
+            SpeechCatalog.all.filter { settings.advancedMode || c.isInstalled(it) || it == recommendedSpeech }.forEach { m ->
+                SpeechModelCard(c, m, settings.advancedMode) { confirmDelete = m }
+            }
         }
     }
     confirmDelete?.let { m ->
@@ -225,6 +247,49 @@ fun ModelsScreen(c: AppController) {
             confirmButton = { TextButton(onClick = { c.deleteModel(m); confirmDelete = null }) { Text(s.delete) } },
             dismissButton = { TextButton(onClick = { confirmDelete = null }) { Text(s.cancel) } },
         )
+    }
+}
+
+@Composable
+private fun SpeechModelCard(c: AppController, m: SpeechModel, advanced: Boolean, onDelete: () -> Unit) {
+    val s = LocalStrings.current
+    val installed = c.isInstalled(m)
+    val inUse = installed && c.installedSpeechModel() == m
+    val dl = c.downloads[m.id]
+    val st = dl?.state
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconTile(AppIcons.Mic)
+            Spacer(Modifier.width(12.dp))
+            Text(s.speechTierName(m.tier), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
+            when {
+                inUse -> Badge(s.inUse, highlight = true)
+                installed -> Badge(s.installed)
+            }
+        }
+        Text(s.speechTierDescription(m.tier), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 10.dp))
+        if (advanced) {
+            Mono("${m.family}\n${m.fileName}\n${m.hfRepo}\n${m.license}")
+        }
+        Text(s.downloadSize(formatBytes(m.approxSizeBytes)), style = MaterialTheme.typography.bodyMedium)
+        if (!installed && st is DownloadState.Downloading) {
+            BrutalProgress(if (st.totalBytes > 0) st.bytes.toFloat() / st.totalBytes else null)
+            Text(s.downloadProgress(formatBytes(st.bytes), formatBytes(st.totalBytes)))
+        }
+        if (st is DownloadState.Failed) Text(downloadErrorText(s, st.error), color = MaterialTheme.colorScheme.error)
+        Row(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            when {
+                installed && !inUse -> SecondaryButton(s.useThisAi, { c.useSpeechModel(m) }, Modifier)
+                !installed && st is DownloadState.Downloading && dl?.paused != true ->
+                    SecondaryButton(s.pause, { c.pauseDownload(m) }, Modifier)
+                !installed -> SecondaryButton(
+                    if (dl?.paused == true) s.resume else s.download,
+                    { c.useSpeechModel(m); c.startDownload(m, thenTest = false) },
+                    Modifier,
+                )
+            }
+            if (installed) TextButton(onClick = onDelete) { Text(s.delete) }
+        }
     }
 }
 
@@ -279,6 +344,32 @@ fun AdvancedScreen(c: AppController) {
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     minLines = 3,
                 )
+            }
+            SectionCard {
+                Text(s.voiceSection, style = MaterialTheme.typography.titleMedium)
+                Text(s.advSpeechLanguage, style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 8.dp))
+                ChoiceRow(SpeechLanguage.entries.map { it to s.speechLanguageLabel(it) }, settings.speechLanguage) { v ->
+                    c.updateSettings { it.copy(speechLanguage = v) }
+                    c.prepareVoice()
+                }
+                ParamSlider(s.advSpeechRate, settings.speechRate, 0.6f..1.6f, 10) { v -> c.updateSettings { it.copy(speechRate = v) } }
+                ListRow(
+                    AppIcons.Tune,
+                    s.advFastListening,
+                    s.advFastListeningHelp,
+                    trailing = {
+                        Switch(checked = settings.fastListening, onCheckedChange = { v -> c.updateSettings { it.copy(fastListening = v) } })
+                    },
+                )
+                ListRow(
+                    AppIcons.Mic,
+                    s.advHandsFree,
+                    s.advHandsFreeHelp,
+                    trailing = {
+                        Switch(checked = settings.handsFree, onCheckedChange = { v -> c.updateSettings { it.copy(handsFree = v) } })
+                    },
+                )
+                Mono("stt: ${c.services.voice.stt.loadedModelId.collectAsState().value ?: "–"}\ntts: ${c.services.voice.speaker.voiceDescription()}")
             }
             SectionCard {
                 Text(s.advLastSpeed, style = MaterialTheme.typography.titleSmall)

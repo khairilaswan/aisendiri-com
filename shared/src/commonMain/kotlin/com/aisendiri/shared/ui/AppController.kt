@@ -17,6 +17,7 @@ import com.aisendiri.shared.i18n.MalayStrings
 import com.aisendiri.shared.i18n.Strings
 import com.aisendiri.shared.model.AiModel
 import com.aisendiri.shared.model.ModelCatalog
+import com.aisendiri.shared.model.ModelFile
 import com.aisendiri.shared.platform.AppServices
 import com.aisendiri.shared.platform.DownloadState
 import com.aisendiri.shared.platform.FinishReason
@@ -25,8 +26,19 @@ import com.aisendiri.shared.platform.GenerationParams
 import com.aisendiri.shared.platform.GenerationStats
 import com.aisendiri.shared.settings.AppLanguage
 import com.aisendiri.shared.settings.AppSettings
+import com.aisendiri.shared.voice.Endpointer
+import com.aisendiri.shared.voice.SpeakerState
+import com.aisendiri.shared.voice.SpeechCatalog
+import com.aisendiri.shared.voice.SpeechLanguage
+import com.aisendiri.shared.voice.SpeechModel
+import com.aisendiri.shared.voice.SpeechText
+import com.aisendiri.shared.voice.TranscribeOptions
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -40,6 +52,7 @@ sealed interface Screen {
     data class FirstRun(val model: AiModel) : Screen
     data object Home : Screen
     data class Chat(val conversationId: String?) : Screen
+    data object Talk : Screen
     data object History : Screen
     data object Settings : Screen
     data object Models : Screen
@@ -52,6 +65,8 @@ sealed interface EngineStatus {
     data class Ready(val model: AiModel) : EngineStatus
     data class Failed(val model: AiModel) : EngineStatus
 }
+
+enum class TalkPhase { IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING }
 
 data class DownloadUi(val state: DownloadState?, val paused: Boolean)
 
@@ -122,6 +137,7 @@ class AppController(
     /** Returns false when there is nothing to go back to, so the system can close the app. */
     fun back(): Boolean {
         if (stack.size <= 1) return false
+        if (current == Screen.Talk) stopTalking()
         stack = stack.dropLast(1)
         return true
     }
@@ -145,12 +161,12 @@ class AppController(
 
     // ---- Downloads ----
 
-    fun isInstalled(model: AiModel): Boolean {
+    fun isInstalled(model: ModelFile): Boolean {
         // Reading modelFilesVersion makes Compose refresh this after downloads and deletes.
         return modelFilesVersion >= 0 && services.models.isInstalled(model)
     }
 
-    fun startDownload(model: AiModel, thenTest: Boolean) {
+    fun startDownload(model: ModelFile, thenTest: Boolean) {
         if (downloadJobs[model.id]?.isActive == true) return
         services.platform.keepScreenOn(true)
         downloads[model.id] = DownloadUi(DownloadState.Preparing, paused = false)
@@ -160,7 +176,7 @@ class AppController(
                     downloads[model.id] = DownloadUi(state, paused = false)
                     if (state is DownloadState.Done) {
                         modelFilesVersion++
-                        if (thenTest && current == Screen.Download(model)) {
+                        if (thenTest && model is AiModel && current == Screen.Download(model)) {
                             stack = stack.dropLast(1) + Screen.FirstRun(model)
                             runFirstTest(model)
                         }
@@ -172,12 +188,12 @@ class AppController(
         }
     }
 
-    fun pauseDownload(model: AiModel) {
+    fun pauseDownload(model: ModelFile) {
         downloadJobs.remove(model.id)?.cancel()
         downloads[model.id] = DownloadUi(downloads[model.id]?.state, paused = true)
     }
 
-    fun cancelDownload(model: AiModel) {
+    fun cancelDownload(model: ModelFile) {
         downloadJobs.remove(model.id)?.cancel()
         downloads.remove(model.id)
         scope.launch {
@@ -186,15 +202,19 @@ class AppController(
         }
     }
 
-    fun deleteModel(model: AiModel) {
+    fun deleteModel(model: ModelFile) {
         scope.launch {
             if (engineStatus.let { it is EngineStatus.Ready && it.model.id == model.id }) {
                 services.engine.unload()
                 engineStatus = EngineStatus.NotLoaded
             }
+            if (model is SpeechModel) sttMutex.withLock { services.voice.stt.unload() }
             services.models.delete(model)
             if (settings.value.activeModelId == model.id) {
                 services.settings.update { it.copy(activeModelId = null) }
+            }
+            if (settings.value.speechModelId == model.id) {
+                services.settings.update { it.copy(speechModelId = null) }
             }
             downloads.remove(model.id)
             modelFilesVersion++
@@ -316,11 +336,15 @@ class AppController(
         private set
 
     fun openChat(conversationId: String?) {
+        openConversation(conversationId, Screen.Chat(conversationId))
+    }
+
+    private fun openConversation(conversationId: String?, screen: Screen) {
         stopGeneration()
         messages.clear()
         chatNotice = null
         conversation = null
-        navigate(Screen.Chat(conversationId))
+        navigate(screen)
         scope.launch {
             if (conversationId != null) {
                 services.conversations.get(conversationId)?.let {
@@ -339,13 +363,15 @@ class AppController(
         conversation = null
     }
 
-    fun send(text: String) {
+    /** Sends a message. In a voice chat ([voice]), the AI answers briefly and the reply is read aloud. */
+    fun send(text: String, voice: Boolean = false) {
         val trimmed = text.trim()
         if (trimmed.isEmpty() || isGenerating) return
         messages.add(ChatMessage(Role.USER, trimmed))
         chatNotice = null
         streamingText = ""
         isGenerating = true
+        val readAloud = if (voice) ReadAloud() else null
         generationJob = scope.launch {
             var reply = ""
             try {
@@ -354,13 +380,15 @@ class AppController(
                     return@launch
                 }
                 val s = strings()
-                val system = settings.value.customSystemPrompt?.takeIf { it.isNotBlank() } ?: s.defaultSystemPrompt
+                var system = settings.value.customSystemPrompt?.takeIf { it.isNotBlank() } ?: s.defaultSystemPrompt
+                if (voice) system += "\n\n" + s.voiceStylePrompt
                 val history = listOf(ChatMessage(Role.SYSTEM, system)) + messages.toList()
                 services.engine.generate(history, generationParams()).collect { e ->
                     when (e) {
                         is GenerationEvent.Text -> {
                             reply += e.chunk
                             streamingText = reply
+                            readAloud?.add(e.chunk)
                         }
                         is GenerationEvent.Done -> {
                             lastStats = e.stats
@@ -379,6 +407,8 @@ class AppController(
                 streamingText = null
                 isGenerating = false
                 saveConversation()
+                // After Stop, talkPhase is already IDLE and nothing more is said.
+                if (readAloud != null && talkPhase != TalkPhase.IDLE) readAloud.finish()
             }
         }
     }
@@ -414,6 +444,198 @@ class AppController(
         scope.launch { services.conversations.save(updated) }
     }
 
+    // ---- Talk ----
+
+    var talkPhase by mutableStateOf(TalkPhase.IDLE)
+        private set
+    /** Microphone loudness from 0 to 1 while listening. */
+    var micLevel by mutableStateOf(0f)
+        private set
+    var talkNotice by mutableStateOf<String?>(null)
+        private set
+    var micDenied by mutableStateOf(false)
+        private set
+    private var talkJob: Job? = null
+    private var finishListening = false
+    private val sttMutex = Mutex()
+
+    val speakerState get() = services.voice.speaker.state
+
+    /** The speech model the user picked, or the one that suits this phone. */
+    fun speechModel(): SpeechModel = SpeechCatalog.byId(settings.value.speechModelId) ?: SpeechCatalog.recommend(device)
+
+    /** The speech model to listen with: the chosen one if downloaded, else any downloaded one. */
+    fun installedSpeechModel(): SpeechModel? =
+        speechModel().takeIf { isInstalled(it) } ?: SpeechCatalog.all.firstOrNull { isInstalled(it) }
+
+    fun useSpeechModel(model: SpeechModel) {
+        services.settings.update { it.copy(speechModelId = model.id) }
+    }
+
+    fun openTalk() {
+        openConversation(null, Screen.Talk)
+        talkPhase = TalkPhase.IDLE
+        talkNotice = null
+        micDenied = false
+        prepareVoice()
+        scope.launch { ensureSpeech() }
+    }
+
+    /** Picks the phone voice again, e.g. after the user installed one. */
+    fun prepareVoice() {
+        services.voice.speaker.prepare(replyLanguage())
+    }
+
+    /** The one big button on the Talk screen does the obvious thing for each moment. */
+    fun talkButton() {
+        when (talkPhase) {
+            TalkPhase.IDLE -> startListening()
+            TalkPhase.LISTENING -> finishListening = true
+            TalkPhase.TRANSCRIBING, TalkPhase.THINKING, TalkPhase.SPEAKING -> stopTalking()
+        }
+    }
+
+    fun stopTalking() {
+        talkPhase = TalkPhase.IDLE
+        micLevel = 0f
+        talkJob?.cancel()
+        talkJob = null
+        stopGeneration()
+        services.voice.speaker.stop()
+    }
+
+    fun requestMic() {
+        services.voice.mic.request { ok -> micDenied = !ok }
+    }
+
+    fun openAppSettings() = services.voice.mic.openAppSettings()
+
+    private fun speechLanguageCode(): String = when (settings.value.speechLanguage) {
+        SpeechLanguage.APP -> if (strings() === MalayStrings) "ms" else "en"
+        SpeechLanguage.MALAY -> "ms"
+        SpeechLanguage.ENGLISH -> "en"
+        SpeechLanguage.AUTO -> "auto"
+    }
+
+    private fun replyLanguage(): String = speechLanguageCode().takeIf { it != "auto" }
+        ?: if (strings() === MalayStrings) "ms" else "en"
+
+    private suspend fun ensureSpeech(): Boolean = sttMutex.withLock {
+        val model = installedSpeechModel() ?: return false
+        if (services.voice.stt.loadedModelId.value == model.id) return true
+        services.voice.stt.load(model, services.models.filePath(model)).isSuccess
+    }
+
+    private fun startListening() {
+        if (!services.voice.mic.granted()) {
+            services.voice.mic.request { ok ->
+                micDenied = !ok
+                if (ok) startListening()
+            }
+            return
+        }
+        if (isGenerating) return
+        services.voice.speaker.stop()
+        talkNotice = null
+        finishListening = false
+        talkPhase = TalkPhase.LISTENING
+        talkJob = scope.launch {
+            val s = strings()
+            try {
+                val endpointer = Endpointer()
+                val chunks = mutableListOf<FloatArray>()
+                services.voice.recorder.record().takeWhile { chunk ->
+                    chunks += chunk
+                    val result = endpointer.accept(chunk)
+                    micLevel = endpointer.level
+                    result == Endpointer.Result.CONTINUE && !finishListening
+                }.collect()
+                micLevel = 0f
+                if (!endpointer.heardSpeech) {
+                    talkNotice = s.talkDidNotHear
+                    talkPhase = TalkPhase.IDLE
+                    return@launch
+                }
+
+                talkPhase = TalkPhase.TRANSCRIBING
+                val audio = FloatArray(chunks.sumOf { it.size })
+                var at = 0
+                for (c in chunks) {
+                    c.copyInto(audio, at)
+                    at += c.size
+                }
+                val language = speechLanguageCode()
+                val result = if (ensureSpeech()) {
+                    services.voice.stt.transcribe(
+                        audio,
+                        TranscribeOptions(
+                            language = language,
+                            threads = engineConfig().threads,
+                            fastMode = settings.value.fastListening,
+                            initialPrompt = if (language == "ms") MALAY_SPEECH_HINT else null,
+                        ),
+                    )
+                } else {
+                    Result.failure(IllegalStateException("No speech model"))
+                }
+                val heard = result.getOrNull()?.let(SpeechText::cleanTranscript)
+                if (heard.isNullOrBlank()) {
+                    talkNotice = if (result.isFailure) s.talkSttError else s.talkDidNotHear
+                    talkPhase = TalkPhase.IDLE
+                    return@launch
+                }
+                talkPhase = TalkPhase.THINKING
+                send(heard, voice = true)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                talkNotice = s.talkSttError
+                talkPhase = TalkPhase.IDLE
+                micLevel = 0f
+            }
+        }
+    }
+
+    /** Reads a streaming reply aloud sentence by sentence, so the voice starts before the AI is done. */
+    private inner class ReadAloud {
+        private val enabled = settings.value.speakReplies &&
+            services.voice.speaker.state.value.let { it == SpeakerState.READY || it == SpeakerState.CLOSE_LANGUAGE }
+        private var pending = ""
+        private var spoke = false
+
+        fun add(chunk: String) {
+            if (!enabled) return
+            pending += chunk
+            val (sentences, rest) = SpeechText.takeSentences(pending)
+            pending = rest
+            sentences.forEach(::say)
+        }
+
+        fun finish() {
+            if (enabled && pending.isNotBlank()) say(pending)
+            pending = ""
+            if (!spoke) {
+                talkPhase = TalkPhase.IDLE
+                return
+            }
+            talkPhase = TalkPhase.SPEAKING
+            talkJob = scope.launch {
+                services.voice.speaker.speaking.first { !it }
+                if (talkPhase != TalkPhase.SPEAKING) return@launch
+                talkPhase = TalkPhase.IDLE
+                if (settings.value.handsFree && current == Screen.Talk) startListening()
+            }
+        }
+
+        private fun say(text: String) {
+            val clean = SpeechText.forSpeech(text)
+            if (clean.isEmpty() || talkPhase == TalkPhase.IDLE) return
+            services.voice.speaker.speak(clean, settings.value.speechRate)
+            spoke = true
+            talkPhase = TalkPhase.SPEAKING
+        }
+    }
+
     // ---- History ----
 
     var conversations by mutableStateOf<List<Conversation>>(emptyList())
@@ -440,4 +662,9 @@ class AppController(
     // ---- Settings ----
 
     fun updateSettings(transform: (AppSettings) -> AppSettings) = services.settings.update(transform)
+
+    private companion object {
+        /** Primes Whisper for everyday Malaysian speech, with its mix of Malay and English. */
+        const val MALAY_SPEECH_HINT = "Okay, saya nak tanya sikit. Boleh tolong terangkan?"
+    }
 }

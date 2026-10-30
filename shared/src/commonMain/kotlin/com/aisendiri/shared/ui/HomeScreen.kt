@@ -85,7 +85,9 @@ fun HomeScreen(c: AppController) {
                 FeatureTile(AppIcons.Chat, s.homeChatTitle, s.homeChatBody, null, Malaysia.Yellow, enabled = active != null, Modifier.weight(1f)) {
                     c.openChat(null)
                 }
-                FeatureTile(AppIcons.Mic, s.homeTalkTitle, s.homeTalkBody, s.comingSoon, Malaysia.SkyTint, enabled = false, Modifier.weight(1f)) {}
+                FeatureTile(AppIcons.Mic, s.homeTalkTitle, s.homeTalkBody, null, Malaysia.SkyTint, enabled = active != null, Modifier.weight(1f)) {
+                    c.openTalk()
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 FeatureTile(AppIcons.Camera, s.homePhotoTitle, s.homePhotoBody, s.comingSoon, Malaysia.RedTint, enabled = false, Modifier.weight(1f)) {}
